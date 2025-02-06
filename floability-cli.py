@@ -48,6 +48,8 @@ def main():
                         help="Number of workers for vine_factory (default=5).")
     parser.add_argument("--cores-per-worker", type=int, default=1,
                         help="Cores requested per worker (default=1).")
+    parser.add_argument("--manager-name", default="floability-project",
+                        help="TaskVine manager naem. Used for factory")
 
     parser.add_argument("--jupyter-port", type=int, default=8888,
                         help="Port on which JupyterLab will listen (default=8888).")
@@ -74,7 +76,7 @@ def main():
     # 2) Start vine_factory
     factory_proc = start_vine_factory(
         batch_type=args.batch_type,
-        manager_name="floability_project",
+        manager_name=args.manager_name,
         min_workers=1,
         max_workers=args.workers,
         cores_per_worker=args.cores_per_worker,

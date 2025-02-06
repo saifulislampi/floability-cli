@@ -1,0 +1,8 @@
+name: matrix
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - cloudpickle
+
