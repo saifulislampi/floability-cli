@@ -21,11 +21,14 @@ Anything else you need to run in the manager (code that runs inside the notebook
 Now you are ready to run Floability. Currently, it is run as a Python script, but we will convert it to a command-line tool soon.
 
 ```bash
-python floability-cli.py --environment environment.yml \
-                         --batch-type local \
-                         --workers 10 \
-                         --cores-per-worker 1 \
-                         --jupyter-port 8888
+python floability-cli.py \
+  --notebook example/matrix-multiplication/matrix-taskvine.ipynb \
+  --environment example/matrix-multiplication/matrix-env.yml \
+  --batch-type local \
+  --workers 10 \
+  --cores-per-worker 1 \
+  --jupyter-port 8888 \
+  --manager-name matrix
 ```
 
 ## Running an Example
