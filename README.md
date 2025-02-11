@@ -1,12 +1,9 @@
 # Floability CLI
 
-To run floability-cli we need `jupyter` and `ndcctools`. We recommend installing everything in a dedicated conda environment:
+To run floability-cli we need `jupyter` and `ndcctools`. We recommend installing everything in a dedicated conda environment using the provided `environment.yml` file:
 
 ```bash
-conda create -n floability-env -y \
-    -c conda-forge \
-    --strict-channel-priority \
-    python jupyter ndcctools
+conda env create -f environment.yml
 ```
 
 Then activate the new environment:

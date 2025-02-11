@@ -1,0 +1,7 @@
+name: floability-env
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - jupyter
+  - ndcctools
