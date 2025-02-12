@@ -19,6 +19,7 @@ from environment import create_conda_pack_from_yml
 from provision import start_vine_factory
 from cleanup import CleanupManager, install_signal_handlers
 from jupyter_runner import start_jupyterlab
+from utils import create_unique_directory
 
 
 def print_ssh_tunnel_instructions(port: int):
@@ -50,9 +51,11 @@ def main():
                         help="Cores requested per worker (default=1).")
     parser.add_argument("--manager-name", default="floability-project",
                         help="TaskVine manager naem. Used for factory")
-
+    
     parser.add_argument("--jupyter-port", type=int, default=8888,
                         help="Port on which JupyterLab will listen (default=8888).")
+
+    parser.add_argument("--base-dir", default="/tmp", help="Base directory for floability run directory files (default=/tmp).")
 
     args = parser.parse_args()
 
@@ -60,15 +63,22 @@ def main():
     cleanup_manager = CleanupManager()
     install_signal_handlers(cleanup_manager)
 
-    # 1) Create conda-pack environment if provided
+    run_dir = create_unique_directory(base_dir=args.base_dir, prefix="floability_run")
+
+    print(f"[floability] Floability run directory: {run_dir}")
+
     poncho_env = None
+    
+    # 1) Create conda-pack if environment file is provided
     if args.environment:
         print(f"[floability] Creating conda-pack from '{args.environment}' using libmamba solver...")
+        #todo: pass run directory after solving conda cache issue
+        
         poncho_env = create_conda_pack_from_yml(
             env_yml=args.environment,
             output_file="floability_env.tar.gz",
-            solver="libmamba",  # Hardcoded
-            force=False         # Hardcoded
+            solver="libmamba",  
+            force=False
         )
     else:
         print("[floability] No environment file provided, skipping conda-pack.")
@@ -80,7 +90,8 @@ def main():
         min_workers=1,
         max_workers=args.workers,
         cores_per_worker=args.cores_per_worker,
-        poncho_env=poncho_env
+        poncho_env=poncho_env,
+        run_dir=run_dir
     )
     cleanup_manager.register_subprocess(factory_proc)
 

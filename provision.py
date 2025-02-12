@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 
 def start_vine_factory(
     batch_type: str,
@@ -8,7 +9,8 @@ def start_vine_factory(
     max_workers: int = 10,
     cores_per_worker: int = 1,
     poncho_env: str = None,
-    scratch_dir: str = "/tmp/"
+    scratch_dir: str = "/tmp/",
+    run_dir: str = "/tmp/",
 ):
     cmd = [
         "vine_factory",
@@ -28,8 +30,16 @@ def start_vine_factory(
 
 
     try:
-        proc = subprocess.Popen(cmd)
-        return proc
+        stdout_file = os.path.join(run_dir, "vine_factory.stdout")
+
+        with open(stdout_file, "w") as stdout:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=stdout,
+                stderr=stdout,
+                text=True,
+            )
+            return proc
     except FileNotFoundError:
         print("[factory] Error: 'vine_factory' not found in PATH.")
         sys.exit(1)
