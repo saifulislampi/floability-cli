@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import threading
 
 def start_vine_factory(
     batch_type: str,
@@ -26,23 +27,35 @@ def start_vine_factory(
         # from vine_factory help: --poncho-env=<file.tar.gz>
         cmd.append(f"--poncho-env={poncho_env}")
 
-    print(f"[factory] Launching vine_factory: {' '.join(cmd)}")
+    print(f"[provision] Launching vine_factory: {' '.join(cmd)}")
 
 
     try:
         stdout_file = os.path.join(run_dir, "vine_factory.stdout")
+        
+        print(f"[provision] vine_factory stdout: {stdout_file}")
 
         with open(stdout_file, "w") as stdout:
             proc = subprocess.Popen(
                 cmd,
                 stdout=stdout,
-                stderr=stdout,
+                stderr=subprocess.PIPE,
                 text=True,
             )
+
+            # stderr=stdout, #todo: parse this error for better error handling        
+            def print_stderr(proc):
+                for line in proc.stderr:
+                    print(f"[provision] vine_factory error: {line.strip()}")
+
+            # Start a thread to print stderr
+            stderr_thread = threading.Thread(target=print_stderr, args=(proc,))
+            stderr_thread.start()
+
             return proc
     except FileNotFoundError:
-        print("[factory] Error: 'vine_factory' not found in PATH.")
+        print("[provision] Error: 'vine_factory' not found in PATH.")
         sys.exit(1)
     except Exception as e:
-        print(f"[factory] Unexpected error launching vine_factory: {e}")
+        print(f"[provision] Unexpected error launching vine_factory: {e}")
         sys.exit(1)

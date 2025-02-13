@@ -66,11 +66,14 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
     if notebook_path:
         cmd.append(notebook_path)
 
-    print(f"[jupyter] Starting JupyterLab on port {port}")
+    print(f"[jupyter] Starting JupyterLab on port {port} if available. Correct port will be displayed after starting.")
     print(f"[jupyter] Notebook: {notebook_path if notebook_path else '(none)'}")
 
     try:
         stdout_file = os.path.join(run_dir, "jupyterlab.stdout")
+        
+        print(f"[jupyter] JupyterLab stdout: {stdout_file}")
+        
         with open(stdout_file, "w") as stdout:
             proc = subprocess.Popen(
                 cmd,

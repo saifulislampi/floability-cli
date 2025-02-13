@@ -55,13 +55,12 @@ def main():
 
     run_dir = create_unique_directory(base_dir=args.base_dir, prefix="floability_run")
 
-    print(f"[floability] Floability run directory: {run_dir}")
+    print(f"[floability] Floability run directory: {run_dir}. All logs will be stored here.")
         
     poncho_env = None
-    
 
     if args.environment:
-        print(f"[floability] Creating conda-pack from '{args.environment}' using libmamba solver...")
+        print(f"[floability] Creating conda-pack from '{args.environment}'")
         #todo: pass run directory after solving conda cache issue
         
         poncho_env = create_conda_pack_from_yml(
@@ -95,8 +94,6 @@ def main():
     cleanup_manager.register_subprocess(jupyter_proc)
 
     # 4) Main loop
-    print("[floability] Services running. Press Ctrl+C to stop (SIGINT to vine_factory).")
-
     try:
         while True:
             time.sleep(5)
