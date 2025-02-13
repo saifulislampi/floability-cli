@@ -15,7 +15,10 @@ def create_conda_pack_from_yml(
     output_file: str = "environment.tar.gz",
     solver: str = "libmamba",
     force: bool = False,
+    base_dir: str = "/tmp",
+    run_dir: str = "/tmp"
 ) -> str:
+    #output_file = os.path.join(base_dir, output_file)
     
     if os.path.exists(output_file) and not force:
         print(f"[environment] '{output_file}' already exists. Use --force to overwrite.")

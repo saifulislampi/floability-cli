@@ -65,7 +65,6 @@ def main():
         
         poncho_env = create_conda_pack_from_yml(
             env_yml=args.environment,
-            output_file="floability_env.tar.gz",
             solver="libmamba",  
             force=False
         )

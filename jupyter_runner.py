@@ -25,7 +25,7 @@ def print_instructions_for_accessing_jupyter(port, token, stdout_file):
     If you are on a remote machine and it doesn't allow direct access to the port, you can create an SSH tunnel:
     
     1. Open a terminal and run the following command:
-       ssh -N -L localhost:{port}:localhost:{port} {username}@{ip_address}
+       ssh -L localhost:{port}:localhost:{port} {username}@{ip_address}
        
     2. Open a web browser and enter the following URL:
        http://localhost:{port}/lab/?token={token}
