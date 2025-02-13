@@ -7,18 +7,34 @@ import os
 import time
 import re
 
+from utils import get_system_information
 
-def print_ssh_tunnel_instructions(port, token):
-    print(f"""
-[SSH Tunnel Instructions]
-If this is a remote machine, on your laptop run:
 
-  ssh -L {port}:localhost:{port} user@remote.yourdomain.edu
+def print_instructions_for_accessing_jupyter(port, token, stdout_file):
+    system_info = get_system_information()
+    ip_address = system_info.get("ip_address", "remote.yourdomain.edu")
+    username = system_info.get("username", "user")
 
-Then open in your local browser:
-
-  http://localhost:{port}/?token={token}
-""")
+    
+    instructions = f"""[jupyter] JupyterLab is running on port {port} on {ip_address}.
+    
+    You can access it using one of the following URLs:
+    local:  http://localhost:{port}/lab/?token={token}
+    remote: http://{ip_address}:{port}/lab/?token={token}
+    
+    If you are on a remote machine and it doesn't allow direct access to the port, you can create an SSH tunnel:
+    
+    1. Open a terminal and run the following command:
+       ssh -N -L localhost:{port}:localhost:{port} {username}@{ip_address}
+       
+    2. Open a web browser and enter the following URL:
+       http://localhost:{port}/lab/?token={token}
+    """
+    
+    if stdout_file:
+        instructions += f"\n[jupyter] You can access full jupyterlab log at {stdout_file}\n"
+    
+    print(f"\n{instructions}")
 
 def monitor_stdout(stdout_file):
     with open(stdout_file, "r") as f:
@@ -31,20 +47,21 @@ def monitor_stdout(stdout_file):
                 token_match = re.search(r'token=([a-zA-Z0-9]+)', url)
                 token = token_match.group(1) if token_match else "N/A"
                 
-                print(f"\n[jupyter] JupyterLab is running. Access it using the following URL:\n{url}")
-                print(f"[jupyter] Token: {token}")
-                print(f"[jupyter] Port: {port}")
-                print_ssh_tunnel_instructions(port, token)
+                #todo: verify this approach of getting port and token
+                
+                print_instructions_for_accessing_jupyter(port, token, stdout_file)
+                
                 break
             else:
                 time.sleep(1)
 
-def start_jupyterlab(notebook_path: str = None, port: int = 8888, run_dir: str = "/tmp"):
+def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: str = "0.0.0.0", run_dir: str = "/tmp"):
     
     cmd = [
         "jupyter", "lab",
         "--no-browser",
         "--port", str(port),
+        "--ip", jupyter_ip
     ]
     if notebook_path:
         cmd.append(notebook_path)

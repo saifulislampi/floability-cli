@@ -16,26 +16,14 @@ import argparse
 import time
 
 from environment import create_conda_pack_from_yml
-from provision import start_vine_factory
+from resource_provisioner import start_vine_factory
 from cleanup import CleanupManager, install_signal_handlers
 from jupyter_runner import start_jupyterlab
 from utils import create_unique_directory
+from utils import get_system_information
 
 
-def print_ssh_tunnel_instructions(port: int):
-    print(f"""
-[SSH Tunnel Instructions]
-If this is a remote machine, on your laptop run:
-
-  ssh -L {port}:localhost:{port} user@remote.yourdomain.edu
-
-Then open in your local browser:
-
-  http://localhost:{port}
-""")
-
-
-def main():
+def get_parsed_arguments():
     parser = argparse.ArgumentParser(
         description="Floability CLI: run distributed Jupyter-based workflows with TaskVine."
     )
@@ -57,19 +45,21 @@ def main():
 
     parser.add_argument("--base-dir", default="/tmp", help="Base directory for floability run directory files (default=/tmp).")
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    # Initialize cleanup manager & install signal handlers
+def main():
+    args = get_parsed_arguments()
+    
     cleanup_manager = CleanupManager()
     install_signal_handlers(cleanup_manager)
 
     run_dir = create_unique_directory(base_dir=args.base_dir, prefix="floability_run")
 
     print(f"[floability] Floability run directory: {run_dir}")
-
+        
     poncho_env = None
     
-    # 1) Create conda-pack if environment file is provided
+
     if args.environment:
         print(f"[floability] Creating conda-pack from '{args.environment}' using libmamba solver...")
         #todo: pass run directory after solving conda cache issue
@@ -99,11 +89,10 @@ def main():
     #    We'll pass None for the notebook_path if not given.
     jupyter_proc = start_jupyterlab(
         notebook_path=args.notebook,  # None if no notebook is specified
-        port=args.jupyter_port
+        port=args.jupyter_port,
+        run_dir=run_dir
     )
     cleanup_manager.register_subprocess(jupyter_proc)
-
-    print_ssh_tunnel_instructions(args.jupyter_port)
 
     # 4) Main loop
     print("[floability] Services running. Press Ctrl+C to stop (SIGINT to vine_factory).")
