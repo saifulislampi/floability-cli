@@ -79,7 +79,8 @@ def main():
         max_workers=args.workers,
         cores_per_worker=args.cores_per_worker,
         poncho_env=poncho_env,
-        run_dir=run_dir
+        run_dir=run_dir,
+        scratch_dir=run_dir
     )
     cleanup_manager.register_subprocess(factory_proc)
 
