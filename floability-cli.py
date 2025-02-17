@@ -14,6 +14,9 @@ Example usage:
 
 import argparse
 import time
+import tarfile
+import os
+import subprocess
 
 from environment import create_conda_pack_from_yml
 from resource_provisioner import start_vine_factory
@@ -66,9 +69,28 @@ def main():
         poncho_env = create_conda_pack_from_yml(
             env_yml=args.environment,
             solver="libmamba",  
-            force=False
+            force=False,
+            base_dir=args.base_dir,
+            run_dir=run_dir
         )
+        
+        env_dir = os.path.join(run_dir, "current_conda_env")
+        os.makedirs(env_dir, exist_ok=True)
+        with tarfile.open(poncho_env, "r:gz") as tar:
+            tar.extractall(path=env_dir)
+        
+        # Run conda-unpack to ensure the environment is correctly set up
+        
+        # Only do this if conda-unpack is present in the environment
+        subprocess.run([
+            "conda", "run",
+            "--prefix", env_dir,
+            "--no-capture-output",
+            "conda-unpack"
+        ], check=True)
+       
     else:
+        env_dir = None
         print("[floability] No environment file provided, skipping conda-pack.")
 
     # 2) Start vine_factory
@@ -89,7 +111,8 @@ def main():
     jupyter_proc = start_jupyterlab(
         notebook_path=args.notebook,  # None if no notebook is specified
         port=args.jupyter_port,
-        run_dir=run_dir
+        run_dir=run_dir,
+        conda_env_dir=env_dir
     )
     cleanup_manager.register_subprocess(jupyter_proc)
 

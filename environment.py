@@ -6,32 +6,62 @@ import shutil
 import logging
 import tempfile
 import subprocess
+import hashlib
 
 from ndcctools.poncho import package_create
 
 
 def create_conda_pack_from_yml(
     env_yml: str,
-    output_file: str = "environment.tar.gz",
     solver: str = "libmamba",
     force: bool = False,
+    output_file: str = None,
     base_dir: str = "/tmp",
     run_dir: str = "/tmp"
-) -> str:
-    #output_file = os.path.join(base_dir, output_file)
+) -> str:    
+    common_env_dir = os.path.join(base_dir, "flo_common_env")
+    os.makedirs(common_env_dir, exist_ok=True)
     
+    if output_file is None:
+        # Generate a unique filename based on the hash of the environment file conent        
+        with open(env_yml, "r") as f:
+            raw_content = f.read()
+        cleaned_content = "".join(raw_content.split())
+        file_hash = hashlib.md5(cleaned_content.encode("utf-8")).hexdigest()
+            
+        output_file = os.path.join(common_env_dir, f"env_{file_hash}.tar.gz")
+
+    print(f"[environment] Output file: {output_file}")
+        
     if os.path.exists(output_file) and not force:
-        print(f"[environment] '{output_file}' already exists. Use --force to overwrite.")
+        print(f"[environment] '{output_file}' already exists. Skipping environment creation.")
         return output_file
 
+    required_packages = ["python", "jupyter", "ndcctools", "cloudpickle"]
+    
     temp_dir = tempfile.mkdtemp(prefix="conda_env_")
     env_path = os.path.join(temp_dir, "env")
 
     try:
+        with open(env_yml, "r") as f:
+            env_data = yaml.safe_load(f)
+        
+        if "dependencies" not in env_data:
+            env_data["dependencies"] = []
+        
+        for pkg in required_packages:
+            if pkg not in env_data["dependencies"]:
+                env_data["dependencies"].append(pkg)
+        
+        modified_yml = os.path.join(temp_dir, "modifed_env.yml")
+        
+        with open(modified_yml, "w") as f:
+            yaml.safe_dump(env_data, f)
+            
         print(f"[environment] Creating env from '{env_yml}' with solver={solver}...")
         cmd_create = [
             "conda", "env", "create",
-            "--file", env_yml,
+            "--file", modified_yml,
             "--prefix", env_path,
             "--solver", solver
         ]
@@ -56,48 +86,3 @@ def create_conda_pack_from_yml(
         shutil.rmtree(temp_dir, ignore_errors=True)
 
     return output_file
-
-
-def create_poncho_pack_from_env_yml(env_yml: str,
-        cache: bool = True,
-        cache_path: str = ".poncho_cache",
-        force: bool = False) -> str:
-    
-    """Create a Poncho package from a Conda environment.yml file."""
-
-    try:
-        with open(env_yml, "r") as f:
-            env_data = yaml.safe_load(f)
-
-        poncho_spec = {"conda": {}, "pip": []}
-
-        if "channels" in env_data:
-            poncho_spec["conda"]["channels"] = env_data["channels"]
-
-        conda_deps = []
-        pip_deps = []
-
-        deps = env_data.get("dependencies", [])
-        for dep in deps:
-            if isinstance(dep, dict) and "pip" in dep:
-                pip_deps.extend(dep["pip"])
-            else:
-                conda_deps.append(dep)
-
-        poncho_spec["conda"]["packages"] = conda_deps
-        poncho_spec["pip"] = pip_deps
-    
-        print(poncho_spec)
-
-        env_tarball = package_create.dict_to_env(
-            poncho_spec,
-            cache=cache,
-            cache_path=cache_path,
-            force=force
-        )
-        
-        return env_tarball
-        
-    except Exception as e:
-        raise 
-

@@ -55,7 +55,7 @@ def monitor_stdout(stdout_file):
             else:
                 time.sleep(1)
 
-def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: str = "0.0.0.0", run_dir: str = "/tmp"):
+def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: str = "0.0.0.0", run_dir: str = "/tmp", conda_env_dir: str = None):
     
     cmd = [
         "jupyter", "lab",
@@ -68,6 +68,14 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
 
     print(f"[jupyter] Starting JupyterLab on port {port} if available. Correct port will be displayed after starting.")
     print(f"[jupyter] Notebook: {notebook_path if notebook_path else '(none)'}")
+    
+    if conda_env_dir:
+        # Use conda run to start JupyterLab within the extracted environment
+        cmd = [
+            "conda", "run",
+            "--prefix", conda_env_dir,
+            "--no-capture-output"
+        ] + cmd
 
     try:
         stdout_file = os.path.join(run_dir, "jupyterlab.stdout")
