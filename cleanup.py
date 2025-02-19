@@ -8,6 +8,7 @@ terminate() if they're still alive.
 import signal
 import sys
 import time
+import os
 
 class CleanupManager:
     """
@@ -17,24 +18,18 @@ class CleanupManager:
         self.subprocesses = []
 
     def register_subprocess(self, proc):
-        """
-        Register a Popen subprocess so that we can clean it up later.
-        """
         self.subprocesses.append(proc)
 
     def cleanup(self):
-        """
-        1) Send SIGINT to each subprocess so they can do their own cleanup.
-        2) Wait briefly. Any process still running is terminated.
-        """
         print("[cleanup] Sending SIGINT to all subprocesses so they can do their own cleanup...")
 
         # 1) Send SIGINT
         for proc in self.subprocesses:
             if proc.poll() is None:  # still running
-                print(f"[cleanup] SIGINT -> pid={proc.pid}")
+                print(f"[cleanup] SIGINT -> pid={proc.pid}, pgid={os.getpgid(proc.pid)}")
                 try:
-                    proc.send_signal(signal.SIGINT)
+                    # proc.send_signal(signal.SIGINT)
+                    os.killpg(os.getpgid(proc.pid), signal.SIGINT)
                 except Exception as e:
                     print(f"[cleanup] Warning: could not send SIGINT to pid={proc.pid}: {e}")
 
@@ -46,7 +41,8 @@ class CleanupManager:
             if proc.poll() is None:
                 print(f"[cleanup] Process pid={proc.pid} still alive; calling terminate()")
                 try:
-                    proc.terminate()
+                    # proc.terminate()
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
                 except Exception as e:
                     print(f"[cleanup] Warning: could not terminate pid={proc.pid}: {e}")
 
@@ -68,6 +64,9 @@ def install_signal_handlers(cleanup_manager: CleanupManager):
     import signal
 
     def signal_handler(sig, frame):
+        # Temporarily disable the signal handler to prevent recursion
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
         print(f"[cleanup] Caught signal {sig}, initiating cleanup...")
         cleanup_manager.cleanup()
         sys.exit(0)

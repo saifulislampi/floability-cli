@@ -88,7 +88,11 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
                 stdout=stdout,
                 stderr=stdout,
                 text=True,
+                # preexec_fn=os.setsid, #todo: revisit cleanup.py for this
             )
+            
+            print(f"[jupyter] JupyterLab process started with PID {proc.pid} and PGID {os.getpgid(proc.pid)}")
+
 
             monitor_thread = threading.Thread(target=monitor_stdout, args=(stdout_file,))
             monitor_thread.start()

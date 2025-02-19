@@ -41,6 +41,7 @@ def start_vine_factory(
                 stdout=stdout,
                 stderr=subprocess.PIPE,
                 text=True,
+                preexec_fn=os.setsid,
             )
 
             # stderr=stdout, #todo: parse this error for better error handling        
