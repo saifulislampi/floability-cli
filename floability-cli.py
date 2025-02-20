@@ -50,9 +50,9 @@ def get_parsed_arguments():
 
     parser.add_argument(
         "--batch-type",
-        default="condor",
+        default="local",
         choices=["local", "condor", "uge", "slurm"],
-        help="Batch system for vine_factory (default=condor).",
+        help="Batch system for vine_factory (default=local).",
     )
     parser.add_argument(
         "--workers",
