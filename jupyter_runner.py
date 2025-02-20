@@ -82,6 +82,10 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
         
         print(f"[jupyter] JupyterLab stdout: {stdout_file}")
         
+        # note: conda run opens a temprary bash process to run the command.
+        # This bash process is the parent of the jupyterlab process.
+        # That is causing some problem with the cleanup.py script.
+        # this combination seems to work. but we should revisit this.
         with open(stdout_file, "w") as stdout:
             proc = subprocess.Popen(
                 cmd,

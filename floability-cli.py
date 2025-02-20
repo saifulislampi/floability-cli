@@ -17,6 +17,7 @@ import time
 import tarfile
 import os
 import subprocess
+import uuid
 
 from environment import create_conda_pack_from_yml
 from resource_provisioner import start_vine_factory
@@ -24,6 +25,14 @@ from cleanup import CleanupManager, install_signal_handlers
 from jupyter_runner import start_jupyterlab
 from utils import create_unique_directory
 from utils import get_system_information
+
+def update_manager_name_in_env(env_dir: str, manager_name: str):
+    env_vars_dir = os.path.join(env_dir, "etc", "conda", "activate.d")
+    os.makedirs(env_vars_dir, exist_ok=True)
+    env_vars_file = os.path.join(env_vars_dir, "env_vars.sh")
+    with open(env_vars_file, "a") as f:
+        f.write(f"\nexport VINE_MANAGER_NAME={manager_name}\n")
+    print(f"[environment] Updated environment variable VINE_MANAGER_NAME={manager_name} in {env_vars_file}")
 
 
 def get_parsed_arguments():
@@ -40,9 +49,7 @@ def get_parsed_arguments():
                         help="Number of workers for vine_factory (default=5).")
     parser.add_argument("--cores-per-worker", type=int, default=1,
                         help="Cores requested per worker (default=1).")
-    parser.add_argument("--manager-name", default="floability-project",
-                        help="TaskVine manager naem. Used for factory")
-    
+    parser.add_argument("--manager-name", help="TaskVine manager naem. Used for factory")
     parser.add_argument("--jupyter-port", type=int, default=8888,
                         help="Port on which JupyterLab will listen (default=8888).")
 
@@ -61,7 +68,12 @@ def main():
     print(f"[floability] Floability run directory: {run_dir}. All logs will be stored here.")
         
     poncho_env = None
+    
+    if args.manager_name is None:
+        args.manager_name = f"floability-{uuid.uuid4()}"
 
+    print(f"[floability] Manager name: {args.manager_name}")
+        
     if args.environment:
         print(f"[floability] Creating conda-pack from '{args.environment}'")
         #todo: pass run directory after solving conda cache issue
@@ -71,7 +83,8 @@ def main():
             solver="libmamba",  
             force=False,
             base_dir=args.base_dir,
-            run_dir=run_dir
+            run_dir=run_dir,
+            manager_name=args.manager_name
         )
         
         env_dir = os.path.join(run_dir, "current_conda_env")
@@ -79,6 +92,7 @@ def main():
         with tarfile.open(poncho_env, "r:gz") as tar:
             tar.extractall(path=env_dir)
         
+        update_manager_name_in_env(env_dir, args.manager_name)
         # Run conda-unpack to ensure the environment is correctly set up
         
         # Only do this if conda-unpack is present in the environment

@@ -17,7 +17,8 @@ def create_conda_pack_from_yml(
     force: bool = False,
     output_file: str = None,
     base_dir: str = "/tmp",
-    run_dir: str = "/tmp"
+    run_dir: str = "/tmp",
+    manager_name: str = None
 ) -> str:    
     common_env_dir = os.path.join(base_dir, "flo_common_env")
     os.makedirs(common_env_dir, exist_ok=True)
@@ -52,6 +53,13 @@ def create_conda_pack_from_yml(
         for pkg in required_packages:
             if pkg not in env_data["dependencies"]:
                 env_data["dependencies"].append(pkg)
+                
+        if "variables" not in env_data:
+            env_data["variables"] = {}
+            
+        env_data["variables"]["VINE_MANAGER_NAME"] = manager_name
+        
+        print(f"[environment] Creating environment with the following packages: {env_data['dependencies']} and variables: {env_data['variables']}")
         
         modified_yml = os.path.join(temp_dir, "modifed_env.yml")
         
