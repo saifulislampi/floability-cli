@@ -93,9 +93,9 @@ def main():
             tar.extractall(path=env_dir)
         
         update_manager_name_in_env(env_dir, args.manager_name)
-        # Run conda-unpack to ensure the environment is correctly set up
+        cleanup_manager.register_directory(env_dir)
         
-        # Only do this if conda-unpack is present in the environment
+        # This fixes the path after extracting the environment
         subprocess.run([
             "conda", "run",
             "--prefix", env_dir,

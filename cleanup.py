@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 import os
+import shutil
 
 class CleanupManager:
     """
@@ -16,9 +17,13 @@ class CleanupManager:
     """
     def __init__(self):
         self.subprocesses = []
+        self.directories = []
 
     def register_subprocess(self, proc):
         self.subprocesses.append(proc)
+    
+    def register_directory(self, directory):
+        self.directories.append(directory)
 
     def cleanup(self):
         print("[cleanup] Sending SIGINT to all subprocesses so they can do their own cleanup...")
@@ -52,6 +57,10 @@ class CleanupManager:
                 proc.wait(timeout=2)
             except:
                 pass
+        
+        for directory in self.directories:
+            print(f"[cleanup] Cleaning up directory: {directory}")
+            shutil.rmtree(directory, ignore_errors=True)
 
         print("[cleanup] All subprocesses cleaned up.")
 
