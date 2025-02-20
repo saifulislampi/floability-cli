@@ -25,8 +25,7 @@ from cleanup import CleanupManager, install_signal_handlers
 from jupyter_runner import start_jupyterlab
 from utils import create_unique_directory
 from utils import get_system_information
-import pathlib
-
+from pathlib import Path
 
 def update_manager_name_in_env(env_dir: str, manager_name: str):
     env_vars_dir = os.path.join(env_dir, "etc", "conda", "activate.d")
@@ -106,7 +105,8 @@ def main():
     print(f"[floability] Manager name: {args.manager_name}")
 
     if args.environment:
-        ext = pathlib.suffix(args.environment)
+        ext = Path(args.environment).suffix
+        
         if ext in ['tar', 'gz']:
             poncho_env = args.environment
         else:
