@@ -25,6 +25,7 @@ from cleanup import CleanupManager, install_signal_handlers
 from jupyter_runner import start_jupyterlab
 from utils import create_unique_directory
 from utils import get_system_information
+import pathlib
 
 
 def update_manager_name_in_env(env_dir: str, manager_name: str):
@@ -105,17 +106,21 @@ def main():
     print(f"[floability] Manager name: {args.manager_name}")
 
     if args.environment:
-        print(f"[floability] Creating conda-pack from '{args.environment}'")
-        # todo: pass run directory after solving conda cache issue
+        ext = pathlib.suffix(args.environment)
+        if ext in ['tar', 'gz']:
+            poncho_env = args.environment
+        else:
+            print(f"[floability] Creating conda-pack from '{args.environment}'")
+            # todo: pass run directory after solving conda cache issue
 
-        poncho_env = create_conda_pack_from_yml(
-            env_yml=args.environment,
-            solver="libmamba",
-            force=False,
-            base_dir=args.base_dir,
-            run_dir=run_dir,
-            manager_name=args.manager_name,
-        )
+            poncho_env = create_conda_pack_from_yml(
+                env_yml=args.environment,
+                solver="libmamba",
+                force=False,
+                base_dir=args.base_dir,
+                run_dir=run_dir,
+                manager_name=args.manager_name,
+            )
 
         env_dir = os.path.join(run_dir, "current_conda_env")
         os.makedirs(env_dir, exist_ok=True)
