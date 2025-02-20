@@ -4,7 +4,8 @@ import datetime
 import getpass
 import socket
 
-SYSTEM_INFORMATION  = None
+SYSTEM_INFORMATION = None
+
 
 def create_unique_directory(base_dir=".", prefix="floability_run", max_attempts=10):
     attempt = 0
@@ -26,7 +27,10 @@ def create_unique_directory(base_dir=".", prefix="floability_run", max_attempts=
             print(f"OS Error on attempt {attempt}: {e}")
             raise
 
-    raise RuntimeError(f"Failed to create a unique directory after {max_attempts} attempts.")
+    raise RuntimeError(
+        f"Failed to create a unique directory after {max_attempts} attempts."
+    )
+
 
 def get_local_ip():
     try:
@@ -39,14 +43,14 @@ def get_local_ip():
         print(f"Error getting local IP: {e}")
         return None
 
+
 def get_system_information():
     global SYSTEM_INFORMATION
     if SYSTEM_INFORMATION is None:
         SYSTEM_INFORMATION = {
             "username": getpass.getuser(),
             "hostname": socket.gethostname(),
-            "ip_address": get_local_ip()
+            "ip_address": get_local_ip(),
         }
-   
-    return SYSTEM_INFORMATION 
 
+    return SYSTEM_INFORMATION

@@ -3,6 +3,7 @@ import sys
 import os
 import threading
 
+
 def start_vine_factory(
     batch_type: str,
     manager_name: str,
@@ -22,17 +23,16 @@ def start_vine_factory(
         f"--max-workers={max_workers}",
         f"--cores={cores_per_worker}",
     ]
-    
+
     if poncho_env:
         # from vine_factory help: --poncho-env=<file.tar.gz>
         cmd.append(f"--poncho-env={poncho_env}")
 
     print(f"[provision] Launching vine_factory: {' '.join(cmd)}")
 
-
     try:
         stdout_file = os.path.join(run_dir, "vine_factory.stdout")
-        
+
         print(f"[provision] vine_factory stdout: {stdout_file}")
 
         with open(stdout_file, "w") as stdout:
@@ -44,7 +44,7 @@ def start_vine_factory(
                 preexec_fn=os.setsid,
             )
 
-            # stderr=stdout, #todo: parse this error for better error handling        
+            # stderr=stdout, #todo: parse this error for better error handling
             def print_stderr(proc):
                 for line in proc.stderr:
                     print(f"[provision] vine_factory error: {line.strip()}")

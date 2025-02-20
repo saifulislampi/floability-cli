@@ -11,32 +11,40 @@ import time
 import os
 import shutil
 
+
 class CleanupManager:
     """
     Tracks subprocesses we need to clean up on Ctrl+C or program exit.
     """
+
     def __init__(self):
         self.subprocesses = []
         self.directories = []
 
     def register_subprocess(self, proc):
         self.subprocesses.append(proc)
-    
+
     def register_directory(self, directory):
         self.directories.append(directory)
 
     def cleanup(self):
-        print("[cleanup] Sending SIGINT to all subprocesses so they can do their own cleanup...")
+        print(
+            "[cleanup] Sending SIGINT to all subprocesses so they can do their own cleanup..."
+        )
 
         # 1) Send SIGINT
         for proc in self.subprocesses:
             if proc.poll() is None:  # still running
-                print(f"[cleanup] SIGINT -> pid={proc.pid}, pgid={os.getpgid(proc.pid)}")
+                print(
+                    f"[cleanup] SIGINT -> pid={proc.pid}, pgid={os.getpgid(proc.pid)}"
+                )
                 try:
                     # proc.send_signal(signal.SIGINT)
                     os.killpg(os.getpgid(proc.pid), signal.SIGINT)
                 except Exception as e:
-                    print(f"[cleanup] Warning: could not send SIGINT to pid={proc.pid}: {e}")
+                    print(
+                        f"[cleanup] Warning: could not send SIGINT to pid={proc.pid}: {e}"
+                    )
 
         # 2) Give them a moment to exit
         time.sleep(2)
@@ -44,7 +52,9 @@ class CleanupManager:
         # 3) Anyone still running, we call terminate()
         for proc in self.subprocesses:
             if proc.poll() is None:
-                print(f"[cleanup] Process pid={proc.pid} still alive; calling terminate()")
+                print(
+                    f"[cleanup] Process pid={proc.pid} still alive; calling terminate()"
+                )
                 try:
                     # proc.terminate()
                     os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
@@ -57,7 +67,7 @@ class CleanupManager:
                 proc.wait(timeout=2)
             except:
                 pass
-        
+
         for directory in self.directories:
             print(f"[cleanup] Cleaning up directory: {directory}")
             shutil.rmtree(directory, ignore_errors=True)
@@ -82,4 +92,3 @@ def install_signal_handlers(cleanup_manager: CleanupManager):
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
