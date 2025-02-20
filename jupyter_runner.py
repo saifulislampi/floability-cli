@@ -15,7 +15,6 @@ def print_instructions_for_accessing_jupyter(port, token, stdout_file):
     ip_address = system_info.get("ip_address", "remote.yourdomain.edu")
     username = system_info.get("username", "user")
 
-    
     instructions = f"""[jupyter] JupyterLab is running on port {port} on {ip_address}.
     
     You can access it using one of the following URLs:
@@ -30,11 +29,14 @@ def print_instructions_for_accessing_jupyter(port, token, stdout_file):
     2. Open a web browser and enter the following URL:
        http://localhost:{port}/lab/?token={token}
     """
-    
+
     if stdout_file:
-        instructions += f"\n[jupyter] You can access full jupyterlab log at {stdout_file}\n"
-    
+        instructions += (
+            f"\n[jupyter] You can access full jupyterlab log at {stdout_file}\n"
+        )
+
     print(f"\n{instructions}")
+
 
 def monitor_stdout(stdout_file):
     with open(stdout_file, "r") as f:
@@ -42,46 +44,46 @@ def monitor_stdout(stdout_file):
             line = f.readline()
             if "http://" in line or "https://" in line:
                 url = line.strip()
-                port_match = re.search(r':(\d+)/', url)
+                port_match = re.search(r":(\d+)/", url)
                 port = port_match.group(1) if port_match else "N/A"
-                token_match = re.search(r'token=([a-zA-Z0-9]+)', url)
+                token_match = re.search(r"token=([a-zA-Z0-9]+)", url)
                 token = token_match.group(1) if token_match else "N/A"
-                
-                #todo: verify this approach of getting port and token
-                
+
+                # todo: verify this approach of getting port and token
+
                 print_instructions_for_accessing_jupyter(port, token, stdout_file)
-                
+
                 break
             else:
                 time.sleep(1)
 
-def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: str = "0.0.0.0", run_dir: str = "/tmp", conda_env_dir: str = None):
-    
-    cmd = [
-        "jupyter", "lab",
-        "--no-browser",
-        "--port", str(port),
-        "--ip", jupyter_ip
-    ]
+
+def start_jupyterlab(
+    notebook_path: str = None,
+    port: int = 8888,
+    jupyter_ip: str = "0.0.0.0",
+    run_dir: str = "/tmp",
+    conda_env_dir: str = None,
+):
+
+    cmd = ["jupyter", "lab", "--no-browser", "--port", str(port), "--ip", jupyter_ip]
     if notebook_path:
         cmd.append(notebook_path)
 
-    print(f"[jupyter] Starting JupyterLab on port {port} if available. Correct port will be displayed after starting.")
+    print(
+        f"[jupyter] Starting JupyterLab on port {port} if available. Correct port will be displayed after starting."
+    )
     print(f"[jupyter] Notebook: {notebook_path if notebook_path else '(none)'}")
-    
+
     if conda_env_dir:
         # Use conda run to start JupyterLab within the extracted environment
-        cmd = [
-            "conda", "run",
-            "--prefix", conda_env_dir,
-            "--no-capture-output"
-        ] + cmd
+        cmd = ["conda", "run", "--prefix", conda_env_dir, "--no-capture-output"] + cmd
 
     try:
         stdout_file = os.path.join(run_dir, "jupyterlab.stdout")
-        
+
         print(f"[jupyter] JupyterLab stdout: {stdout_file}")
-        
+
         # note: conda run opens a temprary bash process to run the command.
         # This bash process is the parent of the jupyterlab process.
         # That is causing some problem with the cleanup.py script.
@@ -94,11 +96,14 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
                 text=True,
                 # preexec_fn=os.setsid, #todo: revisit cleanup.py for this
             )
-            
-            print(f"[jupyter] JupyterLab process started with PID {proc.pid} and PGID {os.getpgid(proc.pid)}")
 
+            print(
+                f"[jupyter] JupyterLab process started with PID {proc.pid} and PGID {os.getpgid(proc.pid)}"
+            )
 
-            monitor_thread = threading.Thread(target=monitor_stdout, args=(stdout_file,))
+            monitor_thread = threading.Thread(
+                target=monitor_stdout, args=(stdout_file,)
+            )
             monitor_thread.start()
 
             return proc
@@ -108,4 +113,3 @@ def start_jupyterlab(notebook_path: str = None, port: int = 8888, jupyter_ip: st
     except Exception as e:
         print(f"[jupyter] Failed to start JupyterLab: {e}")
         sys.exit(1)
-
