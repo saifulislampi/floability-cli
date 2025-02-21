@@ -24,21 +24,43 @@ Your notebook should be the same one you developed locally, but it must follow c
 
 After making these adjustments, place the finalized notebook file into the backpack.
 
-### Software
-Floability backpack should contains all software and dependencies that that is needed for the notebook to be executed. These software can come in one of the following format. 
+### 2. Software
+Your backpack should also include every piece of software needed to execute the notebook. These dependencies can come in various formats:
 
-- Conda Environment Definition (envrionment.yml file)
-- Conda pack or poncho pack (tar.gz file)
-- Dockerfile or apptainer definition
-- Sciunit Image
+- Conda environment definition (environment.yml)
+- Conda pack or Poncho pack (a .tar.gz file)
+- Dockerfile or Apptainer definition
+- Sciunit image
 
-These can be written or provided by the users or auto generated with `floability pack` tool. 
+These artifacts may be created by the user or automatically generated via `floability pack`.
 
-### Data
-Data is one of the one of the crucial part of the floability backpack. A backpack needs to capture all the data that is needed to execute the notebook. Data is captured in a data specfication file (`data.yml`). The data specificaion file may contain data url or path, credentials, and data verification information (size, hash etc.). Data can be also represented as a directory inside the backpack. The data.yml file should contain all the information where to get the data and where to put the data for the notebook to consume.
+### 3. Data
+Floability track all required data in data specification file (`data.yml`) file, which specifies how to retrieve, store, and verify each item. Every data component should include the following:
+1. **Name:** A short identifier for the dataset (e.g. training_set, input_images).
+2. **Source Type:**
+    - URL: A link to download data (e.g. from an external server).
+    - Filesystem Path: A path on a specific cluster (e.g. /data/crc_shared/experiment). If this path is unique to a particular host (e.g. crc.nd.edu), the notebook must only be run there.
+    - Backpack Directory: Data stored directly within the backpack.
+3. **Credentials:** Any tokens or login details needed to access the data.
+4. **Verification:** Checksums, file sizes, or hashes to confirm the data is correct and unaltered.
+5. **Target Location:** Where the data should appear in the notebook’s execution environment.
 
-### Compute
-Compute specification file (`compute.yml`) captures the desired computre requirements. For example the number of workers, type of those worker (e.g vine_worker, dask_worker etc), number of cores, memoery, disk space etc that each worker needs.
 
-Compute specification file should also contain any credentials (e.g. location to keys) that might be needed to access the compute.
+### 4. Compute
+The compute specification (`compute.yml`) describes the HPC resources you want for running the notebook:
 
+- Number of workers (e.g., Vine workers, Dask workers, etc.)
+- CPUs per worker, memory, disk space
+- Credential requirements (e.g., key locations or authentication tokens)
+
+By providing a clear blueprint of desired resources, Floability can allocate the appropriate compute environment when launching your notebook.
+
+## Summary
+Putting it all together, a Floability Backpack encapsulates:
+
+1. The original Jupyter notebook—adapted to Floability guidelines.
+2. All required software dependencies (Conda environments, Dockerfiles, etc.).
+3. The necessary data files and a corresponding data specification.
+4. A compute specification detailing the needed cluster resources.
+
+With these pieces in one place, your workflow becomes easily transportable—from a laptop environment to a large-scale HPC cluster—while ensuring the notebook’s integrity and reproducibility. By letting floability unpack and run your backpack, you can confidently scale up your computations wherever the resources are available.
