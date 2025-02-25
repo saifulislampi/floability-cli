@@ -1,0 +1,8 @@
+name: makeflow-images
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - imagemagick
+  - curl
+
