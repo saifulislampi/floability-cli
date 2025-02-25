@@ -1,6 +1,12 @@
 # Floability CLI
 
-To run floability-cli we need `jupyter` and `ndcctools`. We recommend installing everything in a dedicated conda environment using the provided `environment.yml` file:
+
+Floability uses Conda for managing dependencies and environments. If you do not have Conda installed, you can install it via Miniconda or Miniforge. They are both light versions of Anaconda, with Miniforge having conda-forge as the default channel. Follow the instructions provided in the links below:
+
+- [Miniforge Installation](https://github.com/conda-forge/miniforge)
+- [Miniconda Installation](https://docs.anaconda.com/miniconda/install)
+
+All required dependencies for floability are specified in the `environment.yml` file. To create the environment, use the following command:
 
 ```bash
 conda env create -f environment.yml
