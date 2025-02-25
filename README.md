@@ -24,14 +24,13 @@ Anything else you need to run in the manager (code that runs inside the notebook
 Now you are ready to run Floability. Currently, it is run as a Python script, but we will convert it to a command-line tool soon.
 
 ```bash
-python floability-cli.py \
+python floability-cli.py run \
   --notebook example/matrix-multiplication/matrix-taskvine.ipynb \
   --environment example/matrix-multiplication/matrix-env.yml \
   --batch-type local \
   --workers 10 \
   --cores-per-worker 1 \
-  --jupyter-port 8888 \
-  --manager-name matrix
+  --jupyter-port 8888
 ```
 
 ## Running an Example
@@ -61,13 +60,12 @@ def multiply_pair(A, B):
 Below is a sample command line showing how to run this matrix multiplication notebook (matrix-taskvine.ipynb) via Floability on a Condor batch system, allocating 10 workers and using port 8888 for Jupyter:
 
 ```bash
-python floability-cli.py \
+python floability-cli.py run \
   --notebook example/matrix-multiplication/matrix-taskvine.ipynb \
   --environment example/matrix-multiplication/matrix-env.yml \
   --batch-type condor \
   --workers 10 \
   --cores-per-worker 1 \
-  --jupyter-port 8888 \
-  --manager-name matrix
+  --jupyter-port 8888
 ```
 

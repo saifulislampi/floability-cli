@@ -42,55 +42,56 @@ def get_parsed_arguments():
     parser = argparse.ArgumentParser(
         description="Floability CLI: run distributed Jupyter-based workflows with TaskVine."
     )
-    parser.add_argument(
+    
+    subparsers = parser.add_subparsers(dest="command", help="Floability sub-commands")
+    
+    run_parser = subparsers.add_parser("run", help="Run a notebook or Floability backpack")
+    run_parser.add_argument(
         "--environment",
         help="Path to environment.yml or environment.tar.gz (optional).",
     )
-    parser.add_argument("--notebook", help="Path to a .ipynb file (optional).")
-
-    parser.add_argument(
+    run_parser.add_argument("--notebook", help="Path to a .ipynb file (optional).")
+    run_parser.add_argument(
         "--batch-type",
         default="local",
         choices=["local", "condor", "uge", "slurm"],
         help="Batch system for vine_factory (default=local).",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "--workers",
         type=int,
         default=5,
         help="Number of workers for vine_factory (default=5).",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "--cores-per-worker",
         type=int,
         default=1,
         help="Cores requested per worker (default=1).",
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "--manager-name", help="TaskVine manager naem. Used for factory"
     )
-    parser.add_argument(
+    run_parser.add_argument(
         "--jupyter-port",
         type=int,
         default=8888,
         help="Port on which JupyterLab will listen (default=8888).",
     )
 
-    parser.add_argument(
+    run_parser.add_argument(
         "--base-dir",
         default="/tmp",
         help="Base directory for floability run directory files (default=/tmp).",
     )
-
+    
+    pack_parser = subparsers.add_parser("pack", help="Package a notebook into a Floability backpack")
+    verify_parser = subparsers.add_parser("verify", help="Verify a Floability backpack")
+     
     return parser.parse_args()
 
 
-def main():
-    args = get_parsed_arguments()
-
-    cleanup_manager = CleanupManager()
-    install_signal_handlers(cleanup_manager)
-
+def run_floability(args, cleanup_manager):
     run_dir = create_unique_directory(base_dir=args.base_dir, prefix="floability_run")
 
     print(
@@ -98,7 +99,8 @@ def main():
     )
 
     poncho_env = None
-
+    env_dir = None
+    
     if args.manager_name is None:
         args.manager_name = f"floability-{uuid.uuid4()}"
 
@@ -111,8 +113,7 @@ def main():
             poncho_env = args.environment
         else:
             print(f"[floability] Creating conda-pack from '{args.environment}'")
-            # todo: pass run directory after solving conda cache issue
-
+            
             poncho_env = create_conda_pack_from_yml(
                 env_yml=args.environment,
                 solver="libmamba",
@@ -121,7 +122,7 @@ def main():
                 run_dir=run_dir,
                 manager_name=args.manager_name,
             )
-
+        
         env_dir = os.path.join(run_dir, "current_conda_env")
         os.makedirs(env_dir, exist_ok=True)
         with tarfile.open(poncho_env, "r:gz") as tar:
@@ -144,7 +145,6 @@ def main():
         )
 
     else:
-        env_dir = None
         print("[floability] No environment file provided, skipping conda-pack.")
 
     # 2) Start vine_factory
@@ -159,7 +159,7 @@ def main():
         scratch_dir=run_dir,
     )
     cleanup_manager.register_subprocess(factory_proc)
-
+    
     # 3) Always start Jupyter, even if --notebook not provided
     #    We'll pass None for the notebook_path if not given.
     jupyter_proc = start_jupyterlab(
@@ -169,7 +169,7 @@ def main():
         conda_env_dir=env_dir,
     )
     cleanup_manager.register_subprocess(jupyter_proc)
-
+    
     # 4) Main loop
     try:
         while True:
@@ -192,6 +192,22 @@ def main():
         cleanup_manager.cleanup()
 
     print("[floability] Exiting main.")
+
+
+def main():
+    args = get_parsed_arguments()
+
+    cleanup_manager = CleanupManager()
+    install_signal_handlers(cleanup_manager)
+    
+    if args.command == "run":
+        run_floability(args, cleanup_manager)
+    elif args.command == "pack":
+        print("[floability] 'pack' command not yet implemented.")
+    elif args.command == "verify":
+        print("[floability] 'verify' command not yet implemented.")
+    else:
+        print("[floability] No command provided. Exiting.")
 
 
 if __name__ == "__main__":
