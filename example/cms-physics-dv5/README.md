@@ -1,5 +1,5 @@
 ```bash
-python floability-cli.py \
+python floability-cli.py run\
   --notebook example/cms-physics-dv5/cms-physics-dv5.ipynb \
   --environment example/cms-physics-dv5/cms-physics-dv5-env.yml \
   --batch-type local \

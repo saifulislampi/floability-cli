@@ -83,7 +83,7 @@ def copy_filesystem_source(source_path: Path, dest: Path) -> None:
 # Core Functions
 # --------------------------------------------------------------------
 
-def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path) -> None:
+def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path, target_location: Path) -> None:
     """
     Download or copy data item according to source_type.
     For 'backpack' source_type, treat `source` as relative to backpack_root.
@@ -93,7 +93,7 @@ def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path) -> None:
     name = data_item.get("name")
     source_type = data_item.get("source_type")
     source = data_item.get("source")
-    target_location = data_item.get("target_location")
+    # target_location = data_item.get("target_location")
     verification_info = data_item.get("verification", {})
     expected_checksum = verification_info.get("checksum")
 
@@ -165,6 +165,10 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
         return
 
     backpack_root_path = Path(backpack_root).resolve()
+    
+    # Note: Assuming workflow is being run inside the backpack.
+    # If the move the workflow to a different location, we need to update this.
+    workflow_root_path = backpack_root_path / "workflow"
 
     for item in data_spec["data"]:
         name = item.get("name", "<unnamed>")
@@ -175,7 +179,7 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
             print(f"Item '{name}' has no 'target_location'; skipping.")
             continue
 
-        target_path = Path(target_location).resolve()
+        target_path = workflow_root_path / target_location    
         already_exists = target_path.exists()
 
         # If item already exists, optionally verify checksum
@@ -187,7 +191,7 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
                 print(f"Data item '{name}' exists but checksum mismatch; re-fetching.")
 
         # If item is missing or mismatch, fetch
-        fetch_data_item(item, backpack_root_path)
+        fetch_data_item(item, backpack_root_path, target_path)
 
 
 def ensure_data_is_fetched(data_yml_path: str, backpack_root: str = ".") -> None:

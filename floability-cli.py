@@ -66,6 +66,57 @@ def update_manager_name_in_env(env_dir: str, manager_name: str):
     )
 
 
+def resolve_backpack_args(args: argparse.Namespace) -> None:
+    """
+    Resolve the backpack arguments for the 'run' sub-command.
+    """
+    
+    if not args.backpack:
+        return
+
+    backpack_dir = Path(args.backpack).resolve()
+    backpack_name = str(backpack_dir.stem)
+    
+    print(f"Started processing backpack: {backpack_name}")
+    
+    if not backpack_dir.is_dir():
+        print(f"Backpack directory not found: {backpack_dir}") #Todo: decide if we should raise an exception
+        return
+    
+    if not args.data_spec:
+        data_spec = backpack_dir / "data" / "data.yml"
+        if data_spec.is_file():
+            args.data_spec = str(data_spec)
+            print(f"Using data spec from backpack: {args.data_spec}")
+    
+    if not args.environment:
+        env_path = backpack_dir / "software" / "environment.yml"
+        #todo: add support for environment.tar.gz and other formats
+        #todo: add support for other names
+    
+        if env_path.is_file():
+            args.environment = str(env_path)
+            print(f"Using environment from backpack: {args.environment}")
+    
+    if not args.notebook:
+        workflow_dir = backpack_dir / "workflow"
+        notebooks = list(workflow_dir.glob("*.ipynb"))
+        
+        if len(notebooks) == 1:
+            args.notebook = str(notebooks[0])
+            print(f"Using notebook from backpack: {args.notebook}")
+        elif len(notebooks) > 1:#take that has the same name as the backpack
+            for notebook in notebooks:
+                if notebook.stem == backpack_dir.stem:
+                    args.notebook = str(notebook)
+                    print(f"Using notebook from backpack: {args.notebook}")
+                    break
+        else:
+            print(f"No notebook found in backpack: {workflow_dir}. Starting JupyterLab without a notebook.")
+            
+    args.backpack_root = str(backpack_dir)
+                
+
 def get_parsed_arguments() -> argparse.Namespace:
     """
     Parse command-line arguments for the Floability CLI.
@@ -79,6 +130,13 @@ def get_parsed_arguments() -> argparse.Namespace:
     
     # run sub-command
     run_parser = subparsers.add_parser("run", help="Run a notebook or Floability backpack")
+    
+    run_parser.add_argument(
+        "--backpack",
+        required=False,
+        help="Path to the Floability backpack directory (optional).",
+    )
+
     run_parser.add_argument(
         "--environment",
         help="Path to environment.yml or environment.tar.gz (optional).",
@@ -154,6 +212,7 @@ def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) ->
     Orchestrates data fetching, environment creation/extraction, starting
     workers and JupyterLab, and manages cleanup.
     """
+    resolve_backpack_args(args)
     
     run_dir = create_unique_directory(base_dir=args.base_dir, prefix="floability_run")
 
