@@ -3,6 +3,8 @@ import time
 import datetime
 import getpass
 import socket
+import tarfile
+from pathlib import Path
 
 SYSTEM_INFORMATION = None
 
@@ -54,3 +56,45 @@ def get_system_information():
         }
 
     return SYSTEM_INFORMATION
+
+
+def safe_extract_tar(tar_file: Path, dest_dir: Path) -> None:
+    """
+    Safely extract the contents of tar_file into dest_dir.
+    This prevents files from escaping the intended extraction directory.
+    """
+
+    print(f"Extracting '{tar_file}' into '{dest_dir}'...")
+
+    with tarfile.open(tar_file, "r:*") as tar:
+
+        def is_within_directory(base: Path, target: Path) -> bool:
+            return str(target.resolve()).startswith(str(base.resolve()))
+
+        for member in tar.getmembers():
+            member_path = dest_dir.joinpath(member.name)
+            if not is_within_directory(dest_dir, member_path):
+                raise Exception(
+                    f"Tar extraction error: {member.name} is outside {dest_dir}"
+                )
+
+        tar.extractall(path=dest_dir)
+
+    print(f"Extraction complete for '{tar_file}'.")
+
+
+def update_manager_name_in_env(env_dir: str, manager_name: str):
+    """
+    Adds/updates the VINE_MANAGER_NAME environment variable in the
+    conda environment's activation script.
+    """
+
+    env_vars_dir = os.path.join(env_dir, "etc", "conda", "activate.d")
+    os.makedirs(env_vars_dir, exist_ok=True)
+    env_vars_file = os.path.join(env_vars_dir, "env_vars.sh")
+
+    with open(env_vars_file, "a", encoding="utf-8") as f:
+        f.write(f"\nexport VINE_MANAGER_NAME={manager_name}\n")
+    print(
+        f"[environment] Updated environment variable VINE_MANAGER_NAME={manager_name} in {env_vars_file}"
+    )
