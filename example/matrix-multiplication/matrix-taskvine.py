@@ -9,32 +9,35 @@ Parallel matrix multiplication with TaskVine, where the manager has *no* NumPy i
 import random
 import ndcctools.taskvine as vine
 
+
 def multiply_pair(A, B):
     import numpy as np  # Only on the worker
+
     A_np = np.array(A, dtype=float)
     B_np = np.array(B, dtype=float)
     C_np = A_np @ B_np
     return C_np.tolist()  # convert back to nested list
 
+
 def main():
-    N = 50      # 50x50 matrices
+    N = 50  # 50x50 matrices
     num_pairs = 10  # We'll do 10 pairs for demonstration
 
     A_list = []
     B_list = []
-    
+
     for _ in range(num_pairs):
         A_mat = [[random.random() for _ in range(N)] for _ in range(N)]
         B_mat = [[random.random() for _ in range(N)] for _ in range(N)]
         A_list.append(A_mat)
         B_list.append(B_mat)
 
-    m = vine.Manager([9123,9150], name="matrix")
-    
+    m = vine.Manager([9123, 9150], name="matrix")
+
     print(f"[manager] Listening on port {m.port}")
 
     tasks_map = {}
-    results = [None]*num_pairs
+    results = [None] * num_pairs
 
     for i in range(num_pairs):
         task = vine.PythonTask(multiply_pair, A_list[i], B_list[i])
@@ -56,6 +59,6 @@ def main():
 
     print("\n[manager] All tasks done.")
 
+
 if __name__ == "__main__":
     main()
-

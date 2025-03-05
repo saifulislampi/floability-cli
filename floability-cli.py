@@ -141,7 +141,7 @@ def resolve_backpack_args(args: argparse.Namespace) -> None:
         if data_spec.is_file():
             args.data_spec = str(data_spec)
             print(f"Using data spec from backpack: {args.data_spec}")
-    
+
     if not args.compute_spec:
         compute_spec = backpack_dir / "compute" / "compute.yml"
         if compute_spec.is_file():
@@ -261,7 +261,7 @@ def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) ->
 
     else:
         print("[floability] No environment file provided, skipping conda-pack.")
-    
+
     # 3) Start vine_factory
     print("[floability] Starting vine_factory...")
     factory_proc = start_vine_factory(

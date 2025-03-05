@@ -27,10 +27,10 @@ with open(samples_dict_file) as f:
     samples_dict_rel = json.load(f)
     samples_dict = {}
     for ds_name, ds in samples_dict_rel.items():
-        samples_dict[ds_name] = {'files': {}}
+        samples_dict[ds_name] = {"files": {}}
 
-        for filename, file_info in ds['files'].items():
-            samples_dict[ds_name]['files'][os.path.abspath(filename)] = file_info
+        for filename, file_info in ds["files"].items():
+            samples_dict[ds_name]["files"][os.path.abspath(filename)] = file_info
 
 
 with open(triggers_file) as f:
@@ -84,11 +84,11 @@ def analysis(events):
         axis=1,
     )
 
-    nolepton = ((nmuons == 0) & (nelectrons == 0) & (ntaus == 0))
+    nolepton = (nmuons == 0) & (nelectrons == 0) & (ntaus == 0)
     onemuon = (nmuons == 1) & (nelectrons == 0) & (ntaus == 0)
 
-    region = onemuon    # Use this option to let less data through the cuts
-    region = nolepton   # Use this option to let more data through the cuts
+    region = onemuon  # Use this option to let less data through the cuts
+    region = nolepton  # Use this option to let more data through the cuts
 
     events["btag_count"] = ak.sum(
         events.Jet[(events.Jet.pt > 20) & (abs(events.Jet.eta) < 2.4)].btagDeepFlavB

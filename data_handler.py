@@ -15,7 +15,7 @@ def compute_md5(file_path: Path, chunk_size: int = 4096) -> Optional[str]:
     Compute MD5 checksum of a file and return the hex digest.
     Return None if file_path is not a file.
     """
-    
+
     if not file_path.is_file():
         return None
     hasher = hashlib.md5()
@@ -28,23 +28,25 @@ def compute_md5(file_path: Path, chunk_size: int = 4096) -> Optional[str]:
         print(f"Error computing MD5 for {file_path}: {e}")
         return None
 
+
 def checksum_matches(file_path: Path, expected_checksum: str) -> bool:
     """
     Compare MD5 checksum of file_path with expected_checksum.
     Return False if file_path does not exist or checksums do not match.
     """
-    
+
     actual = compute_md5(file_path)
     if actual is None:
         return False
     return actual == expected_checksum
+
 
 def download_file(url: str, dest: Path, chunk_size: int = 8192) -> None:
     """
     Download a file from a URL to dest using streaming to limit memory usage.
     Uses a temporary file to avoid partial downloads in final location.
     """
-    
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     temp_path = dest.with_suffix(".tmp")
 
@@ -56,7 +58,7 @@ def download_file(url: str, dest: Path, chunk_size: int = 8192) -> None:
                     f.write(chunk)
         temp_path.replace(dest)
     except Exception as e:
-        print(f"Failed to download {url} => {dest}: {e}")        
+        print(f"Failed to download {url} => {dest}: {e}")
         if temp_path.exists():
             temp_path.unlink()
         raise
@@ -66,7 +68,7 @@ def copy_filesystem_source(source_path: Path, dest: Path) -> None:
     """
     Copy a file or directory from the filesystem/backpack to dest.
     """
-    
+
     # Ensure parent directories exist
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -79,17 +81,21 @@ def copy_filesystem_source(source_path: Path, dest: Path) -> None:
     else:
         print(f"Source not found: {source_path}")
 
+
 # --------------------------------------------------------------------
 # Core Functions
 # --------------------------------------------------------------------
 
-def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path, target_location: Path) -> None:
+
+def fetch_data_item(
+    data_item: Dict[str, Any], backpack_root: Path, target_location: Path
+) -> None:
     """
     Download or copy data item according to source_type.
     For 'backpack' source_type, treat `source` as relative to backpack_root.
     If verification checksum is present, verify after fetching.
     """
-    
+
     name = data_item.get("name")
     source_type = data_item.get("source_type")
     source = data_item.get("source")
@@ -98,7 +104,7 @@ def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path, target_locat
     expected_checksum = verification_info.get("checksum")
 
     if not name or not source_type or not source or not target_location:
-        print(f"Data item is missing required fields.") # Todo: Add more details
+        print(f"Data item is missing required fields.")  # Todo: Add more details
         return
 
     target_path = Path(target_location)
@@ -111,7 +117,7 @@ def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path, target_locat
     elif source_type == "filesystem":
         # ---------------------------------------------
         # Todo: The idea is allow filesystem paths like:
-        # *.crc.nd.eddu:/path/to/file and this method will check if 
+        # *.crc.nd.eddu:/path/to/file and this method will check if
         # you are in the correct host and copy the file to the target location.
         # ---------------------------------------------
         # cleaned_source = source.replace("*.crc.nd.eddu:", "")
@@ -133,7 +139,7 @@ def fetch_data_item(data_item: Dict[str, Any], backpack_root: Path, target_locat
         return
 
     # Verify if we have a checksum
-    #Todo: decide if we should raise an exception if checksum is missing and what to do if it fails
+    # Todo: decide if we should raise an exception if checksum is missing and what to do if it fails
     if expected_checksum:
         if checksum_matches(target_path, expected_checksum):
             print(f"Checksum verified for '{name}' => {target_path}")
@@ -146,7 +152,7 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
     Fetch data from the specification file, if not already present or verified.
     Uses backpack_root as the root for any 'backpack' type sources.
     """
-    
+
     spec_path = Path(data_yml_path)
     if not spec_path.is_file():
         print(f"Data spec file not found: {spec_path}")
@@ -165,7 +171,7 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
         return
 
     backpack_root_path = Path(backpack_root).resolve()
-    
+
     # Note: Assuming workflow is being run inside the backpack.
     # If the move the workflow to a different location, we need to update this.
     workflow_root_path = backpack_root_path / "workflow"
@@ -179,7 +185,7 @@ def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
             print(f"Item '{name}' has no 'target_location'; skipping.")
             continue
 
-        target_path = workflow_root_path / target_location    
+        target_path = workflow_root_path / target_location
         already_exists = target_path.exists()
 
         # If item already exists, optionally verify checksum
@@ -199,6 +205,6 @@ def ensure_data_is_fetched(data_yml_path: str, backpack_root: str = ".") -> None
     Public API to ensure data from data.yml is present and correct.
     If not, fetches it using fetch_data_from_spec.
     """
-    
+
     print("Ensuring data is fetched according to spec...")
     fetch_data_from_spec(data_yml_path, backpack_root)

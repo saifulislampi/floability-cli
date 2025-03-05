@@ -10,7 +10,7 @@ def start_vine_factory(
     manager_name: str,
     min_workers: int = 1,
     max_workers: int = 1,
-    cores_per_worker: int = 1, #todo: remove from args, only allow from yml file
+    cores_per_worker: int = 1,  # todo: remove from args, only allow from yml file
     poncho_env: str = None,
     scratch_dir: str = "/tmp/",
     run_dir: str = "/tmp/",
@@ -39,7 +39,7 @@ def start_vine_factory(
                 if new_max_workers > max_workers:
                     max_workers = new_max_workers
                 cmd.append(f"--max-workers={max_workers}")
-                
+
             if "cores" in vf_config:
                 cores_per_worker = vf_config["cores"]
                 cmd.append(f"--cores={cores_per_worker}")
@@ -75,9 +75,7 @@ def start_vine_factory(
                 cmd.append(f"--condor-requirements={condor_requirements}")
 
         except FileNotFoundError:
-            print(
-                f"[provision] Error: Cluster config file '{config_yml}' not found."
-            )
+            print(f"[provision] Error: Cluster config file '{config_yml}' not found.")
             sys.exit(1)
         except Exception as e:
             print(f"[provision] Unexpected error loading cluster config: {e}")
