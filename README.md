@@ -25,8 +25,8 @@ Now you are ready to run Floability. Currently, it is run as a Python script, bu
 
 ```bash
 python floability-cli.py run \
-  --notebook example/matrix-multiplication/matrix-taskvine.ipynb \
-  --environment example/matrix-multiplication/matrix-env.yml \
+  --notebook example/matrix-multiplication/workflow/matrix-multiplication.ipynb \
+  --environment example/matrix-multiplication/software/environment.yml \
   --batch-type local \
   --workers 10 \
   --cores-per-worker 1 \
@@ -61,8 +61,8 @@ Below is a sample command line showing how to run this matrix multiplication not
 
 ```bash
 python floability-cli.py run \
-  --notebook example/matrix-multiplication/matrix-taskvine.ipynb \
-  --environment example/matrix-multiplication/matrix-env.yml \
+  --notebook example/matrix-multiplication/workflow/matrix-multiplication.ipynb \
+  --environment example/matrix-multiplication/software/environment.yml \
   --batch-type condor \
   --workers 10 \
   --cores-per-worker 1 \
