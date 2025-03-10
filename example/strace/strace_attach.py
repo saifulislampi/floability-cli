@@ -12,7 +12,15 @@ class PythonTaskStrace(vine.PythonTask):
         child_pid = os.fork() 
 
         if child_pid == 0:
+            # strace options:
+            # -qqq   : Suppress various information (max quiet)
+            # -r     : Print relative timestamp for each line
+            # -z     : Print only successful system calls
+            # -f     : Follow child processes (trace across fork)
+            # --trace file : Only trace file-related system calls
+            # -p     : Attach to the specified process ID
             os.execlp("strace", "strace", "-qqq", "-r", "-z", "-f", "--trace", "file", "--output", "strace.txt", "-p", str(parent_pid))
+            print("Failed to exec strace")  # Only reached if execlp fails
             os._exit(1)
         elif child_pid > 0:
             try:
