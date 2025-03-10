@@ -12,7 +12,7 @@ class PythonTaskStrace(vine.PythonTask):
         child_pid = os.fork() 
 
         if child_pid == 0:
-            subprocess.run(["strace", "-q", "-f", "--trace", "file", "--output", "strace.txt", "-p", str(parent_pid)])
+            subprocess.run(["strace", "-qqq", "-r", "-z", "-f", "--trace", "file", "--output", "strace.txt", "-p", str(parent_pid)])
         elif child_pid > 0:
             try:
                 time.sleep(1)
