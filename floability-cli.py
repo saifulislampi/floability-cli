@@ -106,6 +106,12 @@ def get_parsed_arguments() -> argparse.Namespace:
         help="Path to the root of the backpack for 'backpack' source_type files (default='.')",
     )
 
+    run_parser.add_argument(
+        "--no-worker",
+        action="store_true",
+        help="Skip starting workers (optional).",
+    )
+
     # pack sub-command
     pack_parser = subparsers.add_parser(
         "pack", help="Package a notebook into a Floability backpack"
@@ -263,19 +269,23 @@ def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) ->
         print("[floability] No environment file provided, skipping conda-pack.")
 
     # 3) Start vine_factory
-    print("[floability] Starting vine_factory...")
-    factory_proc = start_vine_factory(
-        batch_type=args.batch_type,
-        manager_name=args.manager_name,
-        min_workers=1,
-        max_workers=args.workers,
-        cores_per_worker=args.cores_per_worker,
-        poncho_env=poncho_env,
-        run_dir=run_dir,
-        scratch_dir=run_dir,
-        config_yml=args.compute_spec,
-    )
-    cleanup_manager.register_subprocess(factory_proc)
+    if not args.no_worker:
+        print("[floability] Starting vine_factory...")
+        factory_proc = start_vine_factory(
+            batch_type=args.batch_type,
+            manager_name=args.manager_name,
+            min_workers=1,
+            max_workers=args.workers,
+            cores_per_worker=args.cores_per_worker,
+            poncho_env=poncho_env,
+            run_dir=run_dir,
+            scratch_dir=run_dir,
+            config_yml=args.compute_spec,
+        )
+        cleanup_manager.register_subprocess(factory_proc)
+    else:
+        factory_proc = None
+        print("[floability] vine_factory is disabled by --no-worker.")
 
     # 4) Always start Jupyter, even if --notebook not provided
     #    We'll pass None for the notebook_path if not given.
@@ -294,7 +304,7 @@ def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) ->
             time.sleep(5)
 
             # Check if factory exited
-            if factory_proc.poll() is not None:
+            if factory_proc is not None and factory_proc.poll() is not None:
                 print("[floability] vine_factory ended.")
                 break
 
