@@ -34,6 +34,27 @@ Your backpack should also include every piece of software needed to execute the 
 
 These artifacts may be created by the user or automatically generated via `floability pack`.
 
+#### Example `envrionment.yml`
+```yaml
+name: my_mdv5_env
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - cloudpickle
+  - ndcctools
+  - coffea<2024.4.2
+  - dask<2024.5.2
+  - dask-awkward<2024.5.0
+  - dask-core<2024.5.0
+  - dask-histogram<2024.5.0
+  - fsspec
+  - pip:
+    - fastjet<3.4.2.2
+```
+
 ### 3. Data
 Floability track all required data in data specification file (`data.yml`) file, which specifies how to retrieve, store, and verify each item. Every data component should include the following:
 1. **Name:** A short identifier for the dataset (e.g. training_set, input_images).
@@ -45,6 +66,20 @@ Floability track all required data in data specification file (`data.yml`) file,
 4. **Verification:** Checksums, file sizes, or hashes to confirm the data is correct and unaltered.
 5. **Target Location:** Where the data should appear in the notebook’s execution environment.
 
+#### Example `data.yml`
+
+```yaml
+data:
+  - name: capitol
+    source_type: url
+    source: https://ccl.cse.nd.edu/images/capitol.jpg
+    url: https://ccl.cse.nd.edu/images/capitol.jpg
+    target: capitol.jpg
+  - name: "triggers"
+    source_type: "backpack"
+    source: "data/triggers.json"
+    target_location: "data/triggers.json"
+```
 
 ### 4. Compute
 The compute specification (`compute.yml`) describes the HPC resources you want for running the notebook:
@@ -54,6 +89,16 @@ The compute specification (`compute.yml`) describes the HPC resources you want f
 - Credential requirements (e.g., key locations or authentication tokens)
 
 By providing a clear blueprint of desired resources, Floability can allocate the appropriate compute environment when launching your notebook.
+
+#### Example `compute.yml`
+```yaml
+vine_factory_config:
+  min-workers: 2
+  max-workers: 4
+  cores: 4
+  memory: 1024
+  disk: 2000
+```
 
 ## Summary
 Putting it all together, a Floability Backpack encapsulates:
