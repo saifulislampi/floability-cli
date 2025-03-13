@@ -1,8 +1,10 @@
+name: againg 
 channels:
   - conda-forge
 dependencies:
   - python
   - ipykernel
+  - jupyter
   - gdal
   - pygeos
   - pandas
