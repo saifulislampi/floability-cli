@@ -1,5 +1,6 @@
 import ndcctools.taskvine as vine
 
+
 class PythonTaskStrace(vine.PythonTask):
     def wrapper_fn(fn, *args, **kwargs):
         import os
@@ -9,7 +10,7 @@ class PythonTaskStrace(vine.PythonTask):
         import signal
 
         parent_pid = os.getpid()
-        child_pid = os.fork() 
+        child_pid = os.fork()
 
         if child_pid == 0:
             # strace options:
@@ -19,7 +20,20 @@ class PythonTaskStrace(vine.PythonTask):
             # -f     : Follow child processes (trace across fork)
             # --trace file : Only trace file-related system calls
             # -p     : Attach to the specified process ID
-            os.execlp("strace", "strace", "-qqq", "-r", "-z", "-f", "--trace", "file", "--output", "strace.txt", "-p", str(parent_pid))
+            os.execlp(
+                "strace",
+                "strace",
+                "-qqq",
+                "-r",
+                "-z",
+                "-f",
+                "--trace",
+                "file",
+                "--output",
+                "strace.txt",
+                "-p",
+                str(parent_pid),
+            )
             print("Failed to exec strace")  # Only reached if execlp fails
             os._exit(1)
         elif child_pid > 0:
@@ -41,11 +55,11 @@ class PythonTaskStrace(vine.PythonTask):
 
         return result
 
-
-
     def __init__(self, *args, strace_file=None, **kwargs):
         if strace_file is None or not isinstance(strace_file, vine.File):
-            raise ValueError("strace_file must be provided, and must be a vine.File object")
+            raise ValueError(
+                "strace_file must be provided, and must be a vine.File object"
+            )
 
         fn = args[0]
         args = args[1:]
@@ -55,9 +69,9 @@ class PythonTaskStrace(vine.PythonTask):
         self.add_output(strace_file, "strace.txt")
 
 
-
 def test_fn(*args, **kwargs):
     import random
+
     s = "Hello, World!. args: {}, kwargs: {}".format(args, kwargs)
     s += f"\n {random.randint(0, 1000000)=}"
 
@@ -65,6 +79,7 @@ def test_fn(*args, **kwargs):
         lines = f"\n {f.read()}"
 
     return s
+
 
 if __name__ == "__main__":
 
@@ -87,9 +102,10 @@ if __name__ == "__main__":
     with workers:
         t = m.wait(5)
         if t:
-            print(f"Task completed. Result: {t.result}. Exit code: {t.exit_code}\n Output: {t.output}")
+            print(
+                f"Task completed. Result: {t.result}. Exit code: {t.exit_code}\n Output: {t.output}"
+            )
             print("First 40 lines of strace output:")
-            with open('strace.txt', 'r') as f:
+            with open("strace.txt", "r") as f:
                 for line in f.readlines()[:40]:
                     print(line.strip())
-
