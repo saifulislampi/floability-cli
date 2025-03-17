@@ -13,7 +13,7 @@ from pathlib import Path
 from environment import create_conda_pack_from_yml
 from resource_provisioner import start_vine_factory
 from cleanup import CleanupManager, install_signal_handlers
-from jupyter_runner import start_jupyterlab
+from jupyter_runner import start_jupyterlab, execute_notebook
 from utils import create_unique_directory, safe_extract_tar, update_manager_name_in_env
 from data_handler import ensure_data_is_fetched
 
@@ -33,63 +33,13 @@ def get_parsed_arguments() -> argparse.Namespace:
     run_parser = subparsers.add_parser(
         "run", help="Run a notebook or Floability backpack"
     )
+    _add_execution_args(run_parser)
 
-    run_parser.add_argument(
-        "--backpack",
-        required=False,
-        help="Path to the Floability backpack directory (optional).",
+    # execute sub-command
+    execute_parser = subparsers.add_parser(
+        "execute", help="Execute a notebook in a Floability backpack"
     )
-
-    run_parser.add_argument(
-        "--environment",
-        help="Path to environment.yml or environment.tar.gz (optional).",
-    )
-    run_parser.add_argument("--notebook", help="Path to a .ipynb file (optional).")
-    run_parser.add_argument(
-        "--batch-type",
-        default="local",
-        choices=["local", "condor", "uge", "slurm"],
-        help="Batch system for vine_factory (default=local).",
-    )
-    run_parser.add_argument(
-        "--workers",
-        type=int,
-        default=5,
-        help="Number of workers for vine_factory (default=5).",
-    )
-    run_parser.add_argument(
-        "--cores-per-worker",
-        type=int,
-        default=1,
-        help="Cores requested per worker (default=1).",
-    )
-    run_parser.add_argument(
-        "--manager-name", help="TaskVine manager naem. Used for factory"
-    )
-    run_parser.add_argument(
-        "--jupyter-port",
-        type=int,
-        default=8888,
-        help="Port on which JupyterLab will listen (default=8888).",
-    )
-    run_parser.add_argument(
-        "--base-dir",
-        default="/tmp",
-        help="Base directory for floability run directory files (default=/tmp).",
-    )
-    run_parser.add_argument(
-        "--data-spec",
-        help="Path to data.yml file specifying data to be fetched.",
-    )
-    run_parser.add_argument(
-        "--backpack-root",
-        default=".",
-        help="Path to the root of the backpack (default='.').",
-    )
-    run_parser.add_argument(
-        "--compute-spec",
-        help="Path to compute.yml file specifying resource requirements.",
-    )
+    _add_execution_args(execute_parser)
 
     # fetch sub-command
     fetch_parser = subparsers.add_parser(
@@ -106,12 +56,6 @@ def get_parsed_arguments() -> argparse.Namespace:
         help="Path to the root of the backpack for 'backpack' source_type files (default='.')",
     )
 
-    run_parser.add_argument(
-        "--no-worker",
-        action="store_true",
-        help="Skip starting workers (optional).",
-    )
-
     # pack sub-command
     pack_parser = subparsers.add_parser(
         "pack", help="Package a notebook into a Floability backpack"
@@ -121,6 +65,69 @@ def get_parsed_arguments() -> argparse.Namespace:
     verify_parser = subparsers.add_parser("verify", help="Verify a Floability backpack")
 
     return parser.parse_args()
+
+
+def _add_execution_args(parser: argparse.ArgumentError) -> None:
+    parser.add_argument(
+        "--backpack",
+        required=False,
+        help="Path to the Floability backpack directory (optional).",
+    )
+    parser.add_argument(
+        "--environment",
+        help="Path to environment.yml or environment.tar.gz (optional).",
+    )
+    parser.add_argument("--notebook", help="Path to a .ipynb file (optional).")
+    parser.add_argument(
+        "--batch-type",
+        default="local",
+        choices=["local", "condor", "uge", "slurm"],
+        help="Batch system for vine_factory (default=local).",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=5,
+        help="Maximum number of workers for vine_factory (default=5).",
+    )
+    parser.add_argument(
+        "--cores-per-worker",
+        type=int,
+        default=1,
+        help="Cores requested per worker (default=1).",
+    )
+    parser.add_argument(
+        "--manager-name", help="TaskVine manager name. Used for factory"
+    )
+    parser.add_argument(
+        "--jupyter-port",
+        type=int,
+        default=8888,
+        help="Port on which JupyterLab will listen (default=8888).",
+    )
+    parser.add_argument(
+        "--base-dir",
+        default="/tmp",
+        help="Base directory for floability run directory files (default=/tmp).",
+    )
+    parser.add_argument(
+        "--data-spec",
+        help="Path to data.yml file specifying data to be fetched.",
+    )
+    parser.add_argument(
+        "--backpack-root",
+        default=".",
+        help="Path to the root of the backpack (default='.').",
+    )
+    parser.add_argument(
+        "--compute-spec",
+        help="Path to compute.yml file specifying resource requirements.",
+    )
+    parser.add_argument(
+        "--no-worker",
+        action="store_true",
+        help="Skip starting workers (optional).",
+    )
 
 
 def resolve_backpack_args(args: argparse.Namespace) -> None:
@@ -184,7 +191,9 @@ def resolve_backpack_args(args: argparse.Namespace) -> None:
     args.backpack_root = str(backpack_dir)
 
 
-def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) -> None:
+def run_floability(
+    args: argparse.Namespace, cleanup_manager: CleanupManager, mode="run"
+) -> None:
     """
     Main execution path for the 'run' sub-command.
     Orchestrates data fetching, environment creation/extraction, starting
@@ -287,16 +296,22 @@ def run_floability(args: argparse.Namespace, cleanup_manager: CleanupManager) ->
         factory_proc = None
         print("[floability] vine_factory is disabled by --no-worker.")
 
-    # 4) Always start Jupyter, even if --notebook not provided
-    #    We'll pass None for the notebook_path if not given.
-    print("[floability] Starting JupyterLab...")
-    jupyter_proc = start_jupyterlab(
-        notebook_path=args.notebook,  # None if no notebook is specified
-        port=args.jupyter_port,
-        run_dir=run_dir,
-        conda_env_dir=env_dir,
-    )
-    cleanup_manager.register_subprocess(jupyter_proc)
+    if mode == "run":
+        # 4) Always start Jupyter, even if --notebook not provided
+        #    We'll pass None for the notebook_path if not given.
+        print("[floability] Starting JupyterLab...")
+        jupyter_proc = start_jupyterlab(
+            notebook_path=args.notebook,  # None if no notebook is specified
+            port=args.jupyter_port,
+            run_dir=run_dir,
+            conda_env_dir=env_dir,
+        )
+        cleanup_manager.register_subprocess(jupyter_proc)
+    elif mode == "execute":
+        execute_notebook(
+            notebook_path=args.notebook, run_dir=run_dir, conda_env_dir=env_dir
+        )
+        cleanup_manager.cleanup()
 
     # 4) Main loop
     try:
@@ -333,6 +348,11 @@ def main():
 
     if args.command == "run":
         run_floability(args, cleanup_manager)
+
+    elif args.command == "execute":
+        print("[floability] 'execute' command not yet implemented.")
+        run_floability(args, cleanup_manager, mode="execute")
+
     elif args.command == "fetch":
         if not args.data_spec:
             print(

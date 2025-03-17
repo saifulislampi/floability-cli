@@ -113,3 +113,52 @@ def start_jupyterlab(
     except Exception as e:
         print(f"[jupyter] Failed to start JupyterLab: {e}")
         sys.exit(1)
+
+
+def execute_notebook(
+    notebook_path: str = None,
+    run_dir: str = "/tmp",
+    conda_env_dir: str = None,
+):
+
+    cmd = [
+        "jupyter",
+        "nbconvert",
+        "--to",
+        "notebook",
+        "--execute",
+        "--inplace",
+        notebook_path,
+    ]
+
+    if conda_env_dir:
+        # Use conda run to start JupyterLab within the extracted environment
+        cmd = ["conda", "run", "--prefix", conda_env_dir, "--no-capture-output"] + cmd
+
+    try:
+        stdout_file = os.path.join(run_dir, "jupyterlab.stdout")
+
+        print(f"[jupyter] JupyterLab stdout: {stdout_file}")
+
+        with open(stdout_file, "w") as stdout:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=stdout,
+                stderr=stdout,
+                text=True,
+            )
+
+            proc.wait()  # Wait for the process to complete
+
+            if proc.returncode == 0:
+                print(f"[jupyter] Notebook executed successfully: {notebook_path}")
+                return True
+            else:
+                print(f"[jupyter] Error executing notebook: {notebook_path}")
+                return False
+    except FileNotFoundError:
+        print("[jupyter] Error: 'jupyter' not found in your PATH.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[jupyter] Failed to execute notebook: {e}")
+        sys.exit(1)
