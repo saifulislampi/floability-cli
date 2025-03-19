@@ -7,7 +7,7 @@ import os
 import time
 import re
 
-from utils import get_system_information
+from .utils import get_system_information
 
 
 def print_instructions_for_accessing_jupyter(port, token, stdout_file):

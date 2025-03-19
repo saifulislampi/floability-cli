@@ -6,3 +6,5 @@ dependencies:
   - ndcctools
   - pyyaml
   - requests
+  - pip
+  - pytest

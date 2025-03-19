@@ -1,0 +1,29 @@
+{% set name = "floability" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - floability = floability.cli:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - ndcctools
+    - pyyaml
+    - requests
+
+test:
+  commands:
+    - floability --help

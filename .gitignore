@@ -2,3 +2,7 @@
 **/vine-run-info/
 **/.ipynb_checkpoints/
 .vscode/
+build/
+dist/
+*.egg-info/
+*.egg

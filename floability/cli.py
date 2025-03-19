@@ -10,12 +10,12 @@ import subprocess
 import uuid
 from pathlib import Path
 
-from environment import create_conda_pack_from_yml
-from resource_provisioner import start_vine_factory
-from cleanup import CleanupManager, install_signal_handlers
-from jupyter_runner import start_jupyterlab, execute_notebook
-from utils import create_unique_directory, safe_extract_tar, update_manager_name_in_env
-from data_handler import ensure_data_is_fetched
+from .environment import create_conda_pack_from_yml
+from .resource_provisioner import start_vine_factory
+from .cleanup import CleanupManager, install_signal_handlers
+from .jupyter_runner import start_jupyterlab, execute_notebook
+from .utils import create_unique_directory, safe_extract_tar, update_manager_name_in_env
+from .data_handler import ensure_data_is_fetched
 
 
 def get_parsed_arguments() -> argparse.Namespace:
@@ -366,7 +366,3 @@ def main():
         print("[floability] 'verify' command not yet implemented.")
     else:
         print("[floability] No command provided. Exiting.")
-
-
-if __name__ == "__main__":
-    main()
