@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Any
 
+from .file_operations import execute_operation
 
 # --------------------------------------------------------------------
 # Utility / Helper Functions. We can move these to a separate module.
@@ -102,6 +103,7 @@ def fetch_data_item(
     # target_location = data_item.get("target_location")
     verification_info = data_item.get("verification", {})
     expected_checksum = verification_info.get("checksum")
+    post_fetch_op = data_item.get("post_fetch", {})
 
     if not name or not source_type or not source or not target_location:
         print(f"Data item is missing required fields.")  # Todo: Add more details
@@ -146,6 +148,19 @@ def fetch_data_item(
         else:
             print(f"Checksum mismatch for '{name}' => {target_path}")
 
+    if post_fetch_op:
+        operation_name = post_fetch_op.get("operation")
+        operation_params = post_fetch_op.get("params", {})
+        
+        if operation_name:
+            print(f"Executing post-fetch operation '{operation_name}' for '{name}'...")
+            result = execute_operation(operation_name, target_path, operation_params)
+            
+            if result:
+                print(f"Post-fetch operation '{operation_name}' completed successfully: {result}")
+            else:
+                print(f"Post-fetch operation '{operation_name}' failed for '{name}'")
+        
 
 def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
     """
