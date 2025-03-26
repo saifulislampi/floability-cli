@@ -5,7 +5,9 @@ import shutil
 import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Any
+from tqdm import tqdm
 
+from .file_operations import execute_operation
 
 # --------------------------------------------------------------------
 # Utility / Helper Functions. We can move these to a separate module.
@@ -53,9 +55,20 @@ def download_file(url: str, dest: Path, chunk_size: int = 8192) -> None:
     try:
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
-            with temp_path.open("wb") as f:
+
+            total_size = int(r.headers.get("content-length", 0))
+       
+            with temp_path.open("wb") as f, tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                desc=f"Downloading {url}",
+                ncols=80
+            ) as pbar:
                 for chunk in r.iter_content(chunk_size=chunk_size):
                     f.write(chunk)
+                    pbar.update(len(chunk))
+
         temp_path.replace(dest)
     except Exception as e:
         print(f"Failed to download {url} => {dest}: {e}")
@@ -102,6 +115,7 @@ def fetch_data_item(
     # target_location = data_item.get("target_location")
     verification_info = data_item.get("verification", {})
     expected_checksum = verification_info.get("checksum")
+    post_fetch_op = data_item.get("post_fetch", {})
 
     if not name or not source_type or not source or not target_location:
         print(f"Data item is missing required fields.")  # Todo: Add more details
@@ -146,6 +160,19 @@ def fetch_data_item(
         else:
             print(f"Checksum mismatch for '{name}' => {target_path}")
 
+    if post_fetch_op:
+        operation_name = post_fetch_op.get("operation")
+        operation_params = post_fetch_op.get("params", {})
+        
+        if operation_name:
+            print(f"Executing post-fetch operation '{operation_name}' for '{name}'...")
+            result = execute_operation(operation_name, target_path, operation_params)
+            
+            if result:
+                print(f"Post-fetch operation '{operation_name}' completed successfully: {result}")
+            else:
+                print(f"Post-fetch operation '{operation_name}' failed for '{name}'")
+        
 
 def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
     """

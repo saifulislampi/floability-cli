@@ -350,7 +350,6 @@ def main():
         run_floability(args, cleanup_manager)
 
     elif args.command == "execute":
-        print("[floability] 'execute' command not yet implemented.")
         run_floability(args, cleanup_manager, mode="execute")
 
     elif args.command == "fetch":
