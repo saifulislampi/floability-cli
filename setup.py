@@ -18,6 +18,7 @@ setup(
     install_requires=[
         "pyyaml",
         "requests",
+        "tqdm",
     ],
     entry_points={
         "console_scripts": [

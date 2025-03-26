@@ -5,6 +5,7 @@ import shutil
 import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Any
+from tqdm import tqdm
 
 from .file_operations import execute_operation
 
@@ -54,9 +55,20 @@ def download_file(url: str, dest: Path, chunk_size: int = 8192) -> None:
     try:
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
-            with temp_path.open("wb") as f:
+
+            total_size = int(r.headers.get("content-length", 0))
+       
+            with temp_path.open("wb") as f, tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                desc=f"Downloading {url}",
+                ncols=80
+            ) as pbar:
                 for chunk in r.iter_content(chunk_size=chunk_size):
                     f.write(chunk)
+                    pbar.update(len(chunk))
+
         temp_path.replace(dest)
     except Exception as e:
         print(f"Failed to download {url} => {dest}: {e}")
