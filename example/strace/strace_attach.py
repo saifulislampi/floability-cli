@@ -6,7 +6,6 @@ class PythonTaskStrace(vine.PythonTask):
         import os
         import time
         import traceback
-        import subprocess
         import signal
 
         parent_pid = os.getpid()
@@ -42,10 +41,10 @@ class PythonTaskStrace(vine.PythonTask):
                 result = fn(*args, **kwargs)
 
                 os.kill(child_pid, signal.SIGTERM)
-                s = os.waitpid(child_pid, 0)
+                os.waitpid(child_pid, 0)
 
                 return result
-            except Exception as e:
+            except Exception:
                 print(traceback.format_exc())
                 os._exit(1)
         else:
@@ -100,12 +99,13 @@ if __name__ == "__main__":
     workers.disk = 1000
 
     with workers:
-        t = m.wait(5)
-        if t:
-            print(
-                f"Task completed. Result: {t.result}. Exit code: {t.exit_code}\n Output: {t.output}"
-            )
-            print("First 40 lines of strace output:")
-            with open("strace.txt", "r") as f:
-                for line in f.readlines()[:40]:
-                    print(line.strip())
+        while not m.empty():
+            t = m.wait(5)
+            if t:
+                print(
+                    f"Task completed. Result: {t.result}. Exit code: {t.exit_code}\n Output: {t.output}"
+                )
+                print("First 40 lines of strace output:")
+                with open("strace.txt", "r") as f:
+                    for line in f.readlines()[:40]:
+                        print(line.strip())
