@@ -7,9 +7,7 @@ import logging
 import tempfile
 import subprocess
 import hashlib
-
-from ndcctools.poncho import package_create
-
+import textwrap
 
 def create_conda_pack_from_yml(
     env_yml: str,
@@ -60,10 +58,25 @@ def create_conda_pack_from_yml(
             env_data["variables"] = {}
 
         env_data["variables"]["VINE_MANAGER_NAME"] = manager_name
+        
+        # Check for post-installation script in the environment YAML
+        post_install_script = env_data.get("post_install_script", None)
+        
+        if post_install_script:
+            script_dir = os.path.dirname(env_yml)
+            if not os.path.isabs(post_install_script):
+                post_install_script = os.path.join(script_dir, post_install_script)
 
         print(
             f"[environment] Creating environment with the following packages: {env_data['dependencies']} and variables: {env_data['variables']}"
         )
+        
+        if post_install_script:
+            print(f"[environment] Post-installation script: {post_install_script}")
+            
+        # Remove post_install_script from env_data before writing to modified YAML
+        if "post_install_script" in env_data:
+            del env_data["post_install_script"]
 
         modified_yml = os.path.join(temp_dir, "modifed_env.yml")
 
@@ -83,7 +96,48 @@ def create_conda_pack_from_yml(
             solver,
         ]
         subprocess.run(cmd_create, check=True)
+        
+        if post_install_script and os.path.exists(post_install_script):
+            wrapper_script = os.path.join(temp_dir, "exec_script.sh")
+            
+            script = textwrap.dedent(f"""\
+            #!/bin/bash
+            # Initialize Conda in Bash
+            eval "$(conda shell.bash hook)"
 
+            # Activate the environment
+            conda activate {env_path}
+
+            # Set CONDA_PREFIX
+            export CONDA_PREFIX={env_path}
+            
+            echo "[environment] Activated environment at $CONDA_PREFIX"
+            
+            sleep 5
+
+            # Execute the user-provided script
+            bash {post_install_script}
+
+            # Exit with script's status
+            exit $?
+            """)
+            
+            with open(wrapper_script, "w") as f:
+                f.write(script)
+            
+            # Make the wrapper script executable
+            os.chmod(wrapper_script, 0o755)
+        
+            print(script)
+
+            result = subprocess.run(["bash", wrapper_script], check=False)
+            
+            if result.returncode != 0:
+                print(f"[environment] Post-installation script failed with code {result.returncode}")
+                raise subprocess.CalledProcessError(result.returncode, wrapper_script)
+            else:
+                print(f"[environment] Post-installation script executed successfully.")
+            
         print(f"[environment] Packing environment into '{output_file}'...")
         cmd_pack = ["conda-pack", "-p", env_path, "-o", output_file, "--force"]
         subprocess.run(cmd_pack, check=True)
