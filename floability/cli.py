@@ -128,6 +128,16 @@ def _add_execution_args(parser: argparse.ArgumentError) -> None:
         action="store_true",
         help="Skip starting workers (optional).",
     )
+    
+    parser.add_argument(
+        "--prefer-python",
+        action="store_true",
+        help="Prefer Python script over notebook when both are available.",
+    )
+    parser.add_argument(
+        "--python-script", 
+        help="Path to a Python (.py) file to execute (optional).",
+    )
 
 
 def resolve_backpack_args(args: argparse.Namespace) -> None:
@@ -170,19 +180,37 @@ def resolve_backpack_args(args: argparse.Namespace) -> None:
             args.environment = str(env_path)
             print(f"Using environment from backpack: {args.environment}")
 
-    if not args.notebook:
+    if not args.notebook and not args.python_script:
         workflow_dir = backpack_dir / "workflow"
         notebooks = list(workflow_dir.glob("*.ipynb"))
-
-        if len(notebooks) == 1:
-            args.notebook = str(notebooks[0])
-            print(f"Using notebook from backpack: {args.notebook}")
-        elif len(notebooks) > 1:  # take that has the same name as the backpack
-            for notebook in notebooks:
-                if notebook.stem == backpack_dir.stem:
-                    args.notebook = str(notebook)
-                    print(f"Using notebook from backpack: {args.notebook}")
-                    break
+        python_scripts = list(workflow_dir.glob("*.py"))
+        
+        if python_scripts:
+            if len(python_scripts) == 1:
+                args.python_script = str(python_scripts[0])
+                print(f"Using Python script from backpack: {args.python_script}")
+            elif len(python_scripts) > 1:
+                # Try to find script with same name as backpack
+                for script in python_scripts:
+                    if script.stem == backpack_dir.stem:
+                        args.python_script = str(script)
+                        print(f"Using Python script from backpack: {args.python_script}")
+                        break
+                # If no matching name found, use first script
+                if not args.python_script:
+                    args.python_script = str(python_scripts[0])
+                    print(f"Using Python script from backpack: {args.python_script}")
+        
+        elif notebooks:
+            if len(notebooks) == 1:
+                args.notebook = str(notebooks[0])
+                print(f"Using notebook from backpack: {args.notebook}")
+            elif len(notebooks) > 1:  # take that has the same name as the backpack
+                for notebook in notebooks:
+                    if notebook.stem == backpack_dir.stem:
+                        args.notebook = str(notebook)
+                        print(f"Using notebook from backpack: {args.notebook}")
+                        break
         else:
             print(
                 f"No notebook found in backpack: {workflow_dir}. Starting JupyterLab without a notebook."
@@ -308,9 +336,14 @@ def run_floability(
         )
         cleanup_manager.register_subprocess(jupyter_proc)
     elif mode == "execute":
-        execute_notebook(
-            notebook_path=args.notebook, run_dir=run_dir, conda_env_dir=env_dir
-        )
+        if args.prefer_python and args.python_script:
+            execute_python_script(
+                script_path=args.python_script, run_dir=run_dir, conda_env_dir=env_dir,
+            )
+        elif args.notebook:
+            execute_notebook(
+                notebook_path=args.notebook, run_dir=run_dir, conda_env_dir=env_dir,
+            )
         cleanup_manager.cleanup()
 
     # 4) Main loop
@@ -324,7 +357,7 @@ def run_floability(
                 break
 
             # Check if jupyter ended
-            if jupyter_proc.poll() is not None:
+            if jupyter_proc is not None and jupyter_proc.poll() is not None:
                 print("[floability] JupyterLab ended.")
                 # Optionally break if you want the entire system to stop
                 # break
@@ -336,6 +369,71 @@ def run_floability(
 
     print("[floability] Exiting main.")
 
+def execute_python_script(
+    script_path: str, run_dir: str, conda_env_dir: str = None
+) -> None:
+    """
+    Execute a Python script.
+    
+    Args:
+        script_path: Path to the Python script to execute.
+        run_dir: Directory for run-related files.
+        conda_env_dir: Path to the conda environment directory, if any.
+    """
+    script_abs_path = os.path.abspath(script_path)
+    script_dir = os.path.dirname(script_abs_path)
+    script_name = os.path.basename(script_abs_path)
+    
+    print(f"[floability] Changing directory to: {script_dir}")
+
+    print(f"[floability] Executing Python script: {script_name}")
+    
+    log_file = os.path.join(run_dir, "python_execution.log")
+    
+    print(f"[floability] Logging to: {log_file}")
+    
+    with open(log_file, "w") as log:
+        original_dir = os.getcwd()
+        
+        try:
+            # Change to the script's directory
+            os.chdir(script_dir)
+            log.write(f"[floability] Changed working directory to: {script_dir}\n")
+            
+            cmd = []
+            if conda_env_dir:
+                # If using a conda environment
+                cmd = [
+                    "conda", "run", 
+                    "--prefix", conda_env_dir, 
+                    "--no-capture-output",
+                    "python", script_name  # Use just the filename since we're in the right directory
+                ]
+            else:
+                # Using system Python
+                cmd = ["python", script_name]  # Use just the filename
+            
+            cmd_str = " ".join(cmd)
+            print(f"[floability] Running command: {cmd_str}")
+            log.write(f"[floability] Running command: {cmd_str}\n")
+            log.flush()
+            
+            result = subprocess.run(
+                cmd,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                check=True,
+                text=True,
+            )
+            print(f"[floability] Python script execution completed with exit code {result.returncode}")
+            print(f"[floability] Logs saved to {log_file}")
+            
+        except subprocess.CalledProcessError as e:
+            print(f"[floability] Error executing Python script: {e}")
+            print(f"[floability] Check logs at {log_file}")
+        finally:
+            # Restore the original working directory
+            os.chdir(original_dir)
 
 def main():
     """
