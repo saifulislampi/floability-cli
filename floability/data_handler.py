@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from .file_operations import execute_operation
 
+
 # --------------------------------------------------------------------
 # Utility / Helper Functions. We can move these to a separate module.
 # --------------------------------------------------------------------
@@ -57,13 +58,13 @@ def download_file(url: str, dest: Path, chunk_size: int = 8192) -> None:
             r.raise_for_status()
 
             total_size = int(r.headers.get("content-length", 0))
-       
+
             with temp_path.open("wb") as f, tqdm(
                 total=total_size,
                 unit="B",
                 unit_scale=True,
                 desc=f"Downloading {url}",
-                ncols=80
+                ncols=80,
             ) as pbar:
                 for chunk in r.iter_content(chunk_size=chunk_size):
                     f.write(chunk)
@@ -123,34 +124,35 @@ def fetch_data_item(
 
     target_path = Path(target_location)
 
-    # Decide how to fetch
-    if source_type == "url":
-        print(f"Downloading from URL for '{name}'...")
-        download_file(source, target_path)
+    if not target_path.exists():
+        # Decide how to fetch
+        if source_type == "url":
+            print(f"Downloading from URL for '{name}'...")
+            download_file(source, target_path)
 
-    elif source_type == "filesystem":
-        # ---------------------------------------------
-        # Todo: The idea is allow filesystem paths like:
-        # *.crc.nd.eddu:/path/to/file and this method will check if
-        # you are in the correct host and copy the file to the target location.
-        # ---------------------------------------------
-        # cleaned_source = source.replace("*.crc.nd.eddu:", "")
-        # source_path = Path(cleaned_source)
-        copy_filesystem_source(source, target_path)
+        elif source_type == "filesystem":
+            # ---------------------------------------------
+            # Todo: The idea is allow filesystem paths like:
+            # *.crc.nd.eddu:/path/to/file and this method will check if
+            # you are in the correct host and copy the file to the target location.
+            # ---------------------------------------------
+            # cleaned_source = source.replace("*.crc.nd.eddu:", "")
+            # source_path = Path(cleaned_source)
+            copy_filesystem_source(source, target_path)
 
-    elif source_type == "backpack":
-        source_in_backpack = (backpack_root / source.lstrip("/")).resolve()
-        copy_filesystem_source(source_in_backpack, target_path)
+        elif source_type == "backpack":
+            source_in_backpack = (backpack_root / source.lstrip("/")).resolve()
+            copy_filesystem_source(source_in_backpack, target_path)
 
-    else:
-        print(f"Unsupported source type: {source_type} for '{name}'")
-        return
+        else:
+            print(f"Unsupported source type: {source_type} for '{name}'")
+            return
 
-    # Skip checksum validation for directories. #Todo: Review this
-    if target_path.is_dir():
-        if expected_checksum:
-            print(f"'{name}': target is a directory; skipping checksum validation.")
-        return
+        # Skip checksum validation for directories. #Todo: Review this
+        if target_path.is_dir():
+            if expected_checksum:
+                print(f"'{name}': target is a directory; skipping checksum validation.")
+            return
 
     # Verify if we have a checksum
     # Todo: decide if we should raise an exception if checksum is missing and what to do if it fails
@@ -163,16 +165,18 @@ def fetch_data_item(
     if post_fetch_op:
         operation_name = post_fetch_op.get("operation")
         operation_params = post_fetch_op.get("params", {})
-        
+
         if operation_name:
             print(f"Executing post-fetch operation '{operation_name}' for '{name}'...")
             result = execute_operation(operation_name, target_path, operation_params)
-            
+
             if result:
-                print(f"Post-fetch operation '{operation_name}' completed successfully: {result}")
+                print(
+                    f"Post-fetch operation '{operation_name}' completed successfully: {result}"
+                )
             else:
                 print(f"Post-fetch operation '{operation_name}' failed for '{name}'")
-        
+
 
 def fetch_data_from_spec(data_yml_path: str, backpack_root: str = ".") -> None:
     """
