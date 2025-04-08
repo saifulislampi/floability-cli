@@ -89,3 +89,7 @@ For example:
 ```bash
 floability run --backpack example/matrix-multiplication --batch-type condor
 ```
+
+## License
+
+This project is licensed under GNU GPL v2.0 — see [COPYING](COPYING).
