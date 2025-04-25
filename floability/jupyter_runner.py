@@ -66,7 +66,7 @@ def start_jupyterlab(
     conda_env_dir: str = None,
 ):
 
-    cmd = ["jupyter", "lab", "--no-browser", "--port", str(port), "--ip", jupyter_ip]
+    cmd = ["jupyter", "lab", "--no-browser", "--port", str(port), "--ip", jupyter_ip, "--allow-root"]
     if notebook_path:
         cmd.append(notebook_path)
 
