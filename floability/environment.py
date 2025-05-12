@@ -58,7 +58,8 @@ def create_conda_pack_from_yml(
         if "variables" not in env_data:
             env_data["variables"] = {}
 
-        env_data["variables"]["VINE_MANAGER_NAME"] = manager_name
+        if manager_name is None:
+            env_data["variables"]["VINE_MANAGER_NAME"] = manager_name
 
         # Check for post-installation script in the environment YAML
         post_install_script = env_data.get("post_install_script", None)

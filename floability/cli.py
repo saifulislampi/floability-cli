@@ -77,6 +77,12 @@ def _add_execution_args(parser: argparse.ArgumentError) -> None:
         "--environment",
         help="Path to environment.yml or environment.tar.gz (optional).",
     )
+    
+    parser.add_argument(
+        "--worker-environment",
+        help="Path to worker-environment.yml or worker_environment.tar.gz (optional).",
+    )
+    
     parser.add_argument("--notebook", help="Path to a .ipynb file (optional).")
     parser.add_argument(
         "--batch-type",
@@ -179,6 +185,15 @@ def resolve_backpack_args(args: argparse.Namespace) -> None:
         if env_path.is_file():
             args.environment = str(env_path)
             print(f"Using environment from backpack: {args.environment}")
+    
+    if not args.worker_environment:
+        worker_env_path = backpack_dir / "software" / "worker-environment.yml"
+        # todo: add support for environment.tar.gz and other formats
+        # todo: add support for other names
+        
+        if worker_env_path.is_file():
+            args.worker_environment = str(worker_env_path)
+            print(f"Using worker environment from backpack: {args.worker_environment}")
 
     if not args.notebook and not args.python_script:
         workflow_dir = backpack_dir / "workflow"
@@ -246,7 +261,8 @@ def run_floability(
 
     print(f"[floability] Manager name: {args.manager_name}")
 
-    poncho_env = None
+    environment_pack = None
+    worker_environment_pack = None
     env_dir = None
 
     if args.environment:
@@ -254,12 +270,12 @@ def run_floability(
         ext = Path(args.environment).suffix
 
         if ext in ["tar", "gz"]:
-            poncho_env = str(env_file_path.resolve())
+            environment_pack = str(env_file_path.resolve())
             print(f"[floability] Using conda-pack from '{args.environment}'")
         else:
             print(f"[floability] Creating conda-pack from '{args.environment}'")
 
-            poncho_env = create_conda_pack_from_yml(
+            environment_pack = create_conda_pack_from_yml(
                 env_yml=args.environment,
                 solver="libmamba",
                 force=False,
@@ -273,7 +289,7 @@ def run_floability(
 
         # 2a) Extract the environment
         try:
-            safe_extract_tar(Path(poncho_env), Path(env_dir))
+            safe_extract_tar(Path(environment_pack), Path(env_dir))
         except Exception as e:
             print(f"[floability] Error extracting environment: {e}")
             cleanup_manager.cleanup()
@@ -305,6 +321,30 @@ def run_floability(
     else:
         print("[floability] No environment file provided, skipping conda-pack.")
 
+    if args.worker_environment:
+        worker_env_file_path = Path(args.worker_environment)
+        ext = Path(args.worker_environment).suffix
+
+        if ext in ["tar", "gz"]:
+            worker_environment_pack = str(worker_env_file_path.resolve())
+            print(f"[floability] Using conda-pack from '{args.worker_environment}'")
+        else:
+            print(f"[floability] Creating conda-pack from '{args.worker_environment}'")
+
+            worker_environment_pack = create_conda_pack_from_yml(
+                env_yml=args.worker_environment,
+                solver="libmamba",
+                force=False,
+                base_dir=args.base_dir,
+                run_dir=run_dir,
+            )
+    else:
+        worker_environment_pack = environment_pack
+        
+    if environment_pack != worker_environment_pack:
+        print("[floability] Worker environment is different from main environment.")
+        print(f"[floability] Worker environment pack: {worker_environment_pack}")
+
     # 3) Start vine_factory
     if not args.no_worker:
         print("[floability] Starting vine_factory...")
@@ -314,7 +354,7 @@ def run_floability(
             min_workers=1,
             max_workers=args.workers,
             cores_per_worker=args.cores_per_worker,
-            poncho_env=poncho_env,
+            poncho_env=worker_environment_pack,
             run_dir=run_dir,
             scratch_dir=run_dir,
             config_yml=args.compute_spec,
