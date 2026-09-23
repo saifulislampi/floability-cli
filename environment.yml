@@ -1,33 +1,11 @@
-name: audit-env
-
+name: floability-env
 channels:
   - conda-forge
-
 dependencies:
   - python=3.12
   - ndcctools>=7.17.0
   - conda-pack
   - xrootd
-
-  # Notebook dependencies
-  - numpy=2.4.6
-  - pandas=2.3.3
-  - matplotlib=3.11.2
-
-  # Floability/runtime dependencies
-  - jupyter
-  - jupyter_client
-  - nbformat
-  - pyyaml
-  - requests
-  - tqdm
-  - boto3
-  - botocore
-  - platformdirs
-
   - pip
-  - setuptools
-  - wheel
-
   - pip:
-      - -e .
+      - -e .[dev]
