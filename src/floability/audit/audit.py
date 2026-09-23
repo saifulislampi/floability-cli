@@ -220,6 +220,28 @@ def audit(notebook_path, kernel_name, manager_name, manager_port, conda_env=None
     else:
         jupyter_cmd = ["jupyter", "execute", notebook_copy_path]
 
+
+    # Pass TaskVine manager settings to the notebook
+    notebook_env = os.environ.copy()
+
+    if manager_port:
+        notebook_env["VINE_MANAGER_PORTS"] = f"{manager_port},{manager_port}"
+
+    if manager_name:
+        notebook_env["VINE_MANAGER_NAME"] = manager_name
+
+    print(
+        "[floability] VINE_MANAGER_PORTS:",
+        notebook_env.get("VINE_MANAGER_PORTS")
+    )
+
+    print(
+        "[floability] VINE_MANAGER_NAME:",
+        notebook_env.get("VINE_MANAGER_NAME")
+    )
+
+
+
     subprocess.run(
         [
             "strace",
@@ -227,6 +249,7 @@ def audit(notebook_path, kernel_name, manager_name, manager_port, conda_env=None
             "-o", str(strace_manager),
             "-e", "trace=openat,fstat,newfstatat",
         ] + jupyter_cmd,
+        env=notebook_env,
     )
     print("time taken to execute the notebook: ", time.time() - start)
 
