@@ -416,12 +416,13 @@ from the directories you identify, and generates a backpack for review.
 for the audit.
 2. The notebook's data dependencies must already be present and the path to it should be provided for the audit.
 3. The environment used for the audit needs to have `jupyter` and its relevant dependencies installed in it: `jupyter, nbclient, nbconvert, ipykernel`.
-
+4. If the notebook creates a TaskVine manager, the audit can pass the selected manager name and port into the notebook execution environment.
 ```bash
 floability audit \
   --notebook my-analysis.ipynb \
   --conda-env /path/to/my-conda-env \
   --data-dirs ./data \
+  --manager-port 9123 \
   --backpack-name my-backpack
 ```
 
@@ -449,8 +450,17 @@ my-backpack/
 | `--conda-env` | Conda environment prefix in which to run the notebook |
 | `--data-dirs` | One or more directories containing possible input files |
 | `--no-worker` | Skip the audit worker for a non-TaskVine notebook |
+| `--manager-port` | TaskVine manager port used by the audit worker and passed to notebook execution |
+| `--manager-name` | TaskVine manager name used by the audit worker and passed to notebook execution |
 | `--kernel` | Jupyter kernel used to execute the notebook |
 | `--force` | Overwrite an existing backpack directory |
+
+
+When `--manager-port` or `--manager-name` is provided, Audit also passes the
+corresponding settings to the notebook execution environment as
+`VINE_MANAGER_PORTS` and `VINE_MANAGER_NAME`. This allows a TaskVine manager
+created inside the notebook to use the same manager settings as the
+audit-launched worker.
 
 For a notebook that does not use TaskVine, add `--no-worker`:
 
